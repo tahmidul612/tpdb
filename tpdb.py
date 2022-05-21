@@ -33,20 +33,23 @@ for library in plex.library.sections():
 # sections = [library for library in plex.library.sections() if library.type not in ['artist','photo']]
 # print(libraries)
 POSTER_DIR = '/data/Posters'
+posterZipFiles = {}
+posterFolders = {}
+posterFiles = {}
 
 def organizeMovieFolder(folderDir):
-    # print(folderDir)
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
         if os.path.isfile(sourceFile):
             fileName = os.path.splitext(os.path.basename(file))[0]
             fileExtension = os.path.splitext(file)[1]
             newFolder = os.path.join(folderDir,fileName)
+            if os.path.isdir(newFolder):
+                shutil.rmtree(newFolder)
             os.mkdir(newFolder)
             destinationFile = os.path.join(newFolder,("poster%s" % (fileExtension)))
             os.rename(sourceFile, destinationFile)
 def organizeShowFolder(folderDir):
-    # print(folderDir)
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
         if os.path.isfile(sourceFile):
@@ -66,6 +69,74 @@ def organizeShowFolder(folderDir):
                 fileExtension = os.path.splitext(file)[1]
                 destinationFile = os.path.join(folderDir,("poster%s" % (fileExtension)))
                 os.rename(sourceFile, destinationFile)
+def moviePoster(mediaFolderNames):
+    for poster in posterFiles.keys():
+        matchedMedia = process.extractOne(poster, mediaFolderNames, scorer=fuzz.token_sort_ratio)
+        if matchedMedia:
+            sourceFile = posterFiles.get(poster)
+            unzip = input("Matched poster file %s to movie %s, proceed? (y/n):  " % (os.path.basename(sourceFile), matchedMedia[0]))
+            if unzip == 'y':
+                if 'Custom' not in sourceFile:
+                    sourceDir = os.path.dirname(sourceFile)
+                    destinationDir = os.path.join(sourceDir, 'Custom')
+                else:
+                    destinationDir = os.path.dirname(sourceFile)
+                if not os.path.isdir(destinationDir):
+                    os.mkdir(destinationDir)
+                shutil.move(sourceFile,destinationDir)
+                organizeMovieFolder(destinationDir)
+            else:
+                print('Skipped files\n')
+def findPosters():
+    for path1 in posterRootDirs:
+        for path2 in os.listdir(path1):
+            filePath = os.path.join(path1,path2)
+            if zipfile.is_zipfile(filePath):
+                zipFilePath = filePath
+                newZipFileName = path2.replace('_',' ')
+                newZipFilePath = os.path.join(path1, newZipFileName)
+                os.rename(zipFilePath,newZipFilePath)
+                posterZipFiles[newZipFileName] = newZipFilePath
+            elif os.path.isdir(filePath):
+                posterFolders[path2] = filePath
+            else:
+                break
+def processZipFile():
+    for posterZip in posterZipFiles.keys():
+        sourceZip = posterZipFiles.get(posterZip)
+        destinationDir = ''
+        unzip = ''
+        if selectedLibrary.type == 'show':
+            matchedMedia = process.extractOne(posterZip, mediaFolderNames, scorer=fuzz.token_sort_ratio)
+            if matchedMedia:
+                destinationDir = os.path.join(os.path.dirname(posterZipFiles.get(posterZip)), matchedMedia[0])
+                unzip = input("Matched zip file %s to show %s, proceed? (y/n):  " % (os.path.basename(sourceZip), matchedMedia[0]))
+            else:
+                print('No matching media found\n')
+                continue
+        elif selectedLibrary.type == 'movie':
+            destinationDir = os.path.join(os.path.dirname(sourceZip),os.path.splitext(os.path.basename(sourceZip))[0])
+            unzip = input("Unzip file %s? (y/n):  " % (os.path.basename(sourceZip)))
+        if unzip == 'y':
+            with zipfile.ZipFile(sourceZip, 'r') as zip_ref:
+                try:
+                    if os.path.isdir(destinationDir):
+                        shutil.rmtree(destinationDir)
+                    zip_ref.extractall(destinationDir)
+                except:
+                    print("Something went wrong extracting the zip")
+                else:
+                    if selectedLibrary.type == 'show':
+                        organizeShowFolder(destinationDir)
+                    elif selectedLibrary.type == 'movie':
+                        organizeMovieFolder(destinationDir)
+                    print(sourceZip)
+                    print(destinationDir)
+                    moveZip = input("Move zip file to archive folder? (y/n):  ")
+                    if(moveZip == 'y'):
+                        shutil.move(sourceZip, os.path.join(POSTER_DIR, 'Archives'))
+        else:
+            print('Skipped files\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Reorganize The Poster DB files to work with Plex Meta Manager", formatter_class=argparse.RawTextHelpFormatter)
@@ -96,60 +167,10 @@ if __name__ == '__main__':
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR,path) for path in os.listdir(POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 90]
-                posterZipFiles = {}
-                posterFolders = {}
-                posterFiles = {}
-                for path1 in posterRootDirs:
-                    for path2 in os.listdir(path1):
-                        filePath = os.path.join(path1,path2)
-                        if zipfile.is_zipfile(filePath):
-                            zipFilePath = filePath
-                            newZipFileName = path2.replace('_',' ')
-                            newZipFilePath = os.path.join(path1, newZipFileName)
-                            os.rename(zipFilePath,newZipFilePath)
-                            posterZipFiles[newZipFileName] = newZipFilePath
-                        elif os.path.isdir(filePath):
-                            posterFolders[path2] = filePath
-                        else:
-                            posterFiles[path2] = filePath
-
+                findPosters(posterRootDirs)
                 if opts.action == 'new':
-                    for poster in posterFiles.keys():
-                        matchedMedia = process.extractOne(poster, mediaFolderNames, scorer=fuzz.token_sort_ratio)
-                        if matchedMedia:
-                            sourceFile = posterFiles.get(poster)
-                            unzip = input("Matched poster file %s to movie %s, proceed? (y/n):  " % (os.path.basename(sourceFile), matchedMedia[0]))
-                            if unzip == 'y':
-                                if 'Custom' not in sourceFile:
-                                    sourceDir = os.path.dirname(sourceFile)
-                                    destinationDir = os.path.join(sourceDir, 'Custom')
-                                    if not os.path.isdir(destinationDir):
-                                        os.mkdir(destinationDir)
-                                    shutil.move(sourceFile,destinationDir)
-                                    organizeMovieFolder(destinationDir)
-                            else:
-                                print('Skipped files\n')
-                    for posterZip in posterZipFiles.keys():
-                        # matchedMedia = process.extractOne(posterZip, mediaFolderNames, scorer=fuzz.token_sort_ratio)
-                        # if matchedMedia:
-                        sourceZip = posterZipFiles.get(posterZip)
-                        destinationDir = os.path.join(os.path.dirname(sourceZip),os.path.splitext(os.path.basename(sourceZip))[0])
-                        unzip = input("Unzip file %s? (y/n):  " % (os.path.basename(sourceZip)))
-                        if unzip == 'y':
-                            with zipfile.ZipFile(sourceZip, 'r') as zip_ref:
-                                try:
-                                    zip_ref.extractall(destinationDir)
-                                except:
-                                    print("Something went wrong extracting the zip")
-                                else:
-                                    organizeMovieFolder(destinationDir)
-                                    print(sourceZip)
-                                    print(destinationDir)
-                                    moveZip = input("Move zip file to archive folder? (y/n):  ")
-                                    if(moveZip == 'y'):
-                                        shutil.move(sourceZip, os.path.join(POSTER_DIR, 'Archives'))
-                            # else:
-                            #     print('Skipped files\n')
+                    moviePoster(mediaFolderNames)
+                    processZipFile()
             ############################
             ### Process show posters ###
             ############################
@@ -161,45 +182,9 @@ if __name__ == '__main__':
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR,path) for path in os.listdir(POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
-                print(posterRootDirs)
-                posterZipFiles = {}
-                posterFolders = {}
-                for path1 in posterRootDirs:
-                    for path2 in os.listdir(path1):
-                        filePath = os.path.join(path1,path2)
-                        if zipfile.is_zipfile(filePath):
-                            zipFilePath = filePath
-                            newZipFileName = path2.replace('_',' ')
-                            newZipFilePath = os.path.join(path1, newZipFileName)
-                            os.rename(zipFilePath,newZipFilePath)
-                            posterZipFiles[newZipFileName] = newZipFilePath
-                        elif os.path.isdir(filePath):
-                            posterFolders[path2] = filePath
-                        else:
-                            break
-
+                findPosters(posterRootDirs)
                 if opts.action == 'new':
-                    for posterZip in posterZipFiles.keys():
-                        matchedMedia = process.extractOne(posterZip, mediaFolderNames, scorer=fuzz.token_sort_ratio)
-                        if matchedMedia:
-                            sourceZip = posterZipFiles.get(posterZip)
-                            destinationDir = os.path.join(os.path.dirname(posterZipFiles.get(posterZip)), matchedMedia[0])
-                            unzip = input("Matched zip file %s to show %s, proceed? (y/n):  " % (os.path.basename(sourceZip), matchedMedia[0]))
-                            if unzip == 'y':
-                                with zipfile.ZipFile(sourceZip, 'r') as zip_ref:
-                                    try:
-                                        zip_ref.extractall(destinationDir)
-                                    except:
-                                        print("Something went wrong extracting the zip")
-                                    else:
-                                        organizeShowFolder(destinationDir)
-                                        print(sourceZip)
-                                        print(destinationDir)
-                                        moveZip = input("Move zip file to archive folder? (y/n):  ")
-                                        if(moveZip == 'y'):
-                                            shutil.move(sourceZip, os.path.join(POSTER_DIR, 'Archives'))
-                            else:
-                                print('Skipped files\n')
+                    processZipFile()
                 # elif opts.action == 'sync':
                 #     matchFolder = process.extractOne(media, posterFolders.keys(), scorer=fuzz.token_sort_ratio, score_cutoff=70)
                 #     if matchFolder:

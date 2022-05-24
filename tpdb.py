@@ -87,7 +87,7 @@ def moviePoster(mediaFolderNames):
                 organizeMovieFolder(destinationDir)
             else:
                 print('Skipped files\n')
-def findPosters():
+def findPosters(posterRootDirs):
     for path1 in posterRootDirs:
         for path2 in os.listdir(path1):
             filePath = os.path.join(path1,path2)

@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 import argparse
+import glob
 import os
 import re
 import shutil
@@ -164,7 +165,11 @@ def processZipFile():
                             POSTER_DIR, 'Archives'))
         else:
             print('Skipped files\n')
-
+def check_file(dir, prefix):
+    for s in os.listdir(dir):
+        if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(dir, s)):
+            return True
+    return False
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -228,9 +233,12 @@ if __name__ == '__main__':
                 findPosters(posterRootDirs)
                 if opts.action == 'new':
                     processZipFile()
-                # elif opts.action == 'sync':
-                #     matchFolder = process.extractOne(media, posterFolders.keys(), scorer=fuzz.token_sort_ratio, score_cutoff=70)
-                #     if matchFolder:
-                #         organizeShowFolder(posterFolders.get(matchFolder[0]))
+                elif opts.action == 'sync':
+                    unorganizedPosterFolders = []
+                    for folder in posterFolders:
+                        if not check_file(folder, "poster"):
+                            unorganizedPosterFolders.append(folder)
+                    for folder in unorganizedPosterFolders:
+                        organizeShowFolder(folder)
             else:
                 print("Library type not setup yet")

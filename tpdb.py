@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import zipfile
+import collections
 
 from plexapi.server import PlexServer
 from thefuzz import fuzz, process
@@ -17,7 +18,6 @@ class LibraryData:
         self.title = title
         self.type = type
         self.locations = locations
-
 
 PLEX_URL = ''
 PLEX_TOKEN = ''
@@ -34,10 +34,11 @@ for library in plex.library.sections():
 # sections = [library for library in plex.library.sections() if library.type not in ['artist','photo']]
 # print(libraries)
 POSTER_DIR = '/data/Posters'
+posters = collections.defaultdict(list)
 posterZipFiles = {}
 posterFolders = []
 posterFiles = []
-mediaFolderNames = []
+mediaFolderNames = collections.defaultdict(list)
 
 def organizeMovieFolder(folderDir):
     for file in os.listdir(folderDir):
@@ -46,7 +47,7 @@ def organizeMovieFolder(folderDir):
         matchedMedia = []
         if os.path.isfile(sourceFile):
             if 'Collection' not in file:
-                matchedMedia = process.extractOne(file, mediaFolderNames, scorer=fuzz.token_sort_ratio)
+                matchedMedia = process.extractOne(file, mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
             if opts.force or collection or (matchedMedia and input("Matched poster file %s to movie %s, proceed? (y/n):  " % (file, matchedMedia[0])) == 'y'):
@@ -120,7 +121,36 @@ def findPosters(posterRootDirs):
                 posterFiles.append(filePath)
             else:
                 continue
-
+def movePosters(posterFolder):
+    mediaFolders = mediaFolderNames.get(os.path.basename(posterFolder))
+    if mediaFolders:
+        mediaName = os.path.basename(posterFolder)
+        posterFileNames = os.listdir(posterFolder)
+        if opts.all or input("Hardlink posters from [%s] to [%s]? (y/n): " % (posterFolder, mediaFolders)) == 'y':
+            for poster in posterFileNames:
+                for mediaRoot in mediaFolders:
+                    orig_file = os.path.join(posterFolder,poster)
+                    new_name = poster
+                    if 'Season00' in poster:
+                        new_name = poster.replace('Season00', 'season-specials-poster')
+                    elif 'Season' in poster:
+                        new_name = poster.split('.')[0].lower()+'-poster'+'.'+poster.split('.')[1]
+                    new_file = os.path.join(mediaRoot,mediaName,new_name)
+                    replaceFiles = False
+                    if check_file(os.path.dirname(new_file), os.path.splitext(new_name)[0]):
+                        if os.path.isfile(new_file) and os.path.samefile(orig_file,new_file):
+                            continue
+                        else:
+                            prompt = "Replace existing files? (y/n): "
+                            if opts.all:
+                                prompt = "Replace all poster files in %s? (y/n): " % os.path.dirname(new_file)
+                            if replaceFiles or input(prompt) == 'y':
+                                replaceFiles = True
+                                delete_file(os.path.dirname(new_file), os.path.splitext(poster)[0])
+                            else:
+                                print("Skipping folder %s" % os.path.dirname(new_file))
+                                continue
+                    os.link(orig_file,new_file)
 
 def processZipFile():
     for posterZip in posterZipFiles.keys():
@@ -129,7 +159,7 @@ def processZipFile():
         unzip = ''
         if selectedLibrary.type == 'show':
             matchedMedia = process.extractOne(
-                posterZip, mediaFolderNames, scorer=fuzz.token_sort_ratio)
+                posterZip, mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             if matchedMedia:
                 destinationDir = os.path.join(os.path.dirname(
                     posterZipFiles.get(posterZip)), matchedMedia[0])
@@ -156,8 +186,6 @@ def processZipFile():
                         organizeShowFolder(destinationDir)
                     elif selectedLibrary.type == 'movie':
                         organizeMovieFolder(destinationDir)
-                    print(sourceZip)
-                    print(destinationDir)
                     moveZip = input(
                         "Move zip file to archive folder? (y/n):  ")
                     if(moveZip == 'y'):
@@ -170,6 +198,12 @@ def check_file(dir, prefix):
         if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(dir, s)):
             return True
     return False
+def delete_file(dir, prefix):
+    for s in os.listdir(dir):
+        filePath = os.path.join(dir, s)
+        if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
+            if input("Delete %s? (y/n): " % filePath) == 'y':
+                os.remove(filePath)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -181,6 +215,8 @@ if __name__ == '__main__':
     parser.add_argument('--action', nargs='?',
                         choices=['sync', 'new'], default='new')
     parser.add_argument('-f', '--force', action='store_true')
+    parser.add_argument('-a', '--all', action='store_true')
+    parser.add_argument('--server', nargs='?', choices=['plex','emby'], default='plex')
     opts = parser.parse_args()
 
     if opts.libraries:
@@ -193,14 +229,36 @@ if __name__ == '__main__':
             else:
                 selectedLibrary = None
                 break
+            posters = collections.defaultdict(list)
+            posterZipFiles = {}
+            posterFolders = []
+            posterFiles = []
+            mediaFolderNames = collections.defaultdict(list)
+            if opts.server == 'emby' and (selectedLibrary.type == 'movie' or selectedLibrary.type == 'show'):
+                for path in selectedLibrary.locations:
+                    for name in os.listdir(path): mediaFolderNames[name].append(path)
+                posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
+                    POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
+                posterFolders = []
+                if selectedLibrary.type == 'movie':
+                    for folder in posterRootDirs:
+                        allPaths = glob.glob(os.path.join(folder,'*','*'))
+                        posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
+                elif selectedLibrary.type == 'show':
+                    for folder in posterRootDirs:
+                        allPaths = glob.glob(os.path.join(folder,'*'))
+                        posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
+                for folder in posterFolders:
+                    movePosters(folder)
+                
             #############################
             ### Process movie posters ###
             #############################
-            if selectedLibrary.type == 'movie':
+            elif selectedLibrary.type == 'movie':
                 # Get all media folders in the library
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
-                    mediaFolderNames.extend(os.listdir(path))
+                    for name in os.listdir(path): mediaFolderNames[name].append(path)
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
@@ -223,9 +281,8 @@ if __name__ == '__main__':
             elif selectedLibrary.type == 'show':
                 # Get all media folders in the library
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
-                mediaFolderNames = []
                 for path in selectedLibrary.locations:
-                    mediaFolderNames.extend(os.listdir(path))
+                    for name in os.listdir(path): mediaFolderNames[name].append(path)
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(

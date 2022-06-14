@@ -110,7 +110,8 @@ def findPosters(posterRootDirs):
             filePath = os.path.join(path1, path2)
             if zipfile.is_zipfile(filePath):
                 zipFilePath = filePath
-                newZipFileName = path2.replace('_', ' ')
+                newZipFileName = path2.split('.',1)[0].split('__',1)[0]+path2.split('.',1)[1].replace('_',' ')
+                #newZipFileName = path2.replace('_', ' ')
                 newZipFilePath = os.path.join(path1, newZipFileName)
                 if path2 != newZipFileName:
                     os.rename(zipFilePath, newZipFilePath)

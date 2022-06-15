@@ -110,7 +110,7 @@ def findPosters(posterRootDirs):
             filePath = os.path.join(path1, path2)
             if zipfile.is_zipfile(filePath):
                 zipFilePath = filePath
-                newZipFileName = path2.split('.',1)[0].split('__',1)[0]+path2.split('.',1)[1].replace('_',' ')
+                newZipFileName = (path2.split('.',1)[0].split('__',1)[0]+'.'+path2.split('.',1)[1]).replace('_',' ')
                 #newZipFileName = path2.replace('_', ' ')
                 newZipFilePath = os.path.join(path1, newZipFileName)
                 if path2 != newZipFileName:
@@ -217,7 +217,7 @@ if __name__ == '__main__':
                         choices=['sync', 'new'], default='new')
     parser.add_argument('-f', '--force', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
-    parser.add_argument('--server', nargs='?', choices=['plex','emby'], default='plex')
+    parser.add_argument('--server', nargs='?', choices=['plex','emby','all'], default='plex')
     opts = parser.parse_args()
 
     if opts.libraries:

@@ -243,11 +243,11 @@ if __name__ == '__main__':
                 posterFolders = []
                 if selectedLibrary.type == 'movie':
                     for folder in posterRootDirs:
-                        allPaths = glob.glob(os.path.join(folder,'*','*'))
+                        allPaths = glob.glob(os.path.join(glob.escape(folder),'*','*'))
                         posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
                 elif selectedLibrary.type == 'show':
                     for folder in posterRootDirs:
-                        allPaths = glob.glob(os.path.join(folder,'*'))
+                        allPaths = glob.glob(os.path.join(glob.escape(folder),'*'))
                         posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
                 for folder in posterFolders:
                     movePosters(folder)

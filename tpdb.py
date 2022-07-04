@@ -235,6 +235,10 @@ if __name__ == '__main__':
             posterFolders = []
             posterFiles = []
             mediaFolderNames = collections.defaultdict(list)
+
+            ##########################################
+            ### Copy posters to media dir for EMBY ###
+            ##########################################
             if opts.server == 'emby' and (selectedLibrary.type == 'movie' or selectedLibrary.type == 'show'):
                 for path in selectedLibrary.locations:
                     for name in os.listdir(path): mediaFolderNames[name].append(path)

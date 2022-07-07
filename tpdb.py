@@ -147,7 +147,7 @@ def movePosters(posterFolder):
                                 prompt = "Replace all poster files in %s? (y/n): " % os.path.dirname(new_file)
                             if replaceFiles or input(prompt) == 'y':
                                 replaceFiles = True
-                                delete_file(os.path.dirname(new_file), os.path.splitext(poster)[0])
+                                delete_file(os.path.dirname(new_file), os.path.splitext(new_name)[0])
                             else:
                                 print("Skipping folder %s" % os.path.dirname(new_file))
                                 continue

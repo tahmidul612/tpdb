@@ -6,6 +6,7 @@ import glob
 import os
 import re
 import shutil
+from xmlrpc.client import Boolean
 import zipfile
 import collections
 
@@ -31,8 +32,6 @@ for library in plex.library.sections():
     if library.type not in ['artist', 'photo']:
         allLibraries.append(LibraryData(
             library.title, library.type, library.locations))
-# sections = [library for library in plex.library.sections() if library.type not in ['artist','photo']]
-# print(libraries)
 POSTER_DIR = '/data/Posters'
 posters = collections.defaultdict(list)
 posterZipFiles = {}
@@ -128,6 +127,7 @@ def movePosters(posterFolder):
         mediaName = os.path.basename(posterFolder)
         posterFileNames = os.listdir(posterFolder)
         if opts.all or input("Hardlink posters from [%s] to [%s]? (y/n): " % (posterFolder, mediaFolders)) == 'y':
+            replaceFiles = False
             for poster in posterFileNames:
                 for mediaRoot in mediaFolders:
                     orig_file = os.path.join(posterFolder,poster)
@@ -137,7 +137,6 @@ def movePosters(posterFolder):
                     elif 'Season' in poster:
                         new_name = poster.split('.')[0].lower()+'-poster'+'.'+poster.split('.')[1]
                     new_file = os.path.join(mediaRoot,mediaName,new_name)
-                    replaceFiles = False
                     if check_file(os.path.dirname(new_file), os.path.splitext(new_name)[0]):
                         if os.path.isfile(new_file) and os.path.samefile(orig_file,new_file):
                             continue
@@ -147,7 +146,7 @@ def movePosters(posterFolder):
                                 prompt = "Replace all poster files in %s? (y/n): " % os.path.dirname(new_file)
                             if replaceFiles or input(prompt) == 'y':
                                 replaceFiles = True
-                                delete_file(os.path.dirname(new_file), os.path.splitext(new_name)[0])
+                                delete_file(os.path.dirname(new_file), os.path.splitext(new_name)[0], False)
                             else:
                                 print("Skipping folder %s" % os.path.dirname(new_file))
                                 continue
@@ -199,11 +198,11 @@ def check_file(dir, prefix):
         if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(dir, s)):
             return True
     return False
-def delete_file(dir, prefix):
+def delete_file(dir, prefix, prompt: Boolean):
     for s in os.listdir(dir):
         filePath = os.path.join(dir, s)
         if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
-            if input("Delete %s? (y/n): " % filePath) == 'y':
+            if not prompt or input("Delete %s? (y/n): " % filePath) == 'y':
                 os.remove(filePath)
 
 if __name__ == '__main__':
@@ -280,6 +279,9 @@ if __name__ == '__main__':
                                 posterExists = True
                         if posterExists and input("Process folder \"%s\"? (y/n):  " % folder) == 'y':
                             organizeMovieFolder(folder)
+                if opts.server == 'all':
+                    for folder in posterFolders:
+                        movePosters(folder)
             ############################
             ### Process show posters ###
             ############################
@@ -302,5 +304,8 @@ if __name__ == '__main__':
                             unorganizedPosterFolders.append(folder)
                     for folder in unorganizedPosterFolders:
                         organizeShowFolder(folder)
+                if opts.server == 'all':
+                    for folder in posterFolders:
+                        movePosters(folder)
             else:
                 print("Library type not setup yet")

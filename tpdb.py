@@ -11,6 +11,7 @@ import zipfile
 import collections
 
 from plexapi.server import PlexServer
+from plexapi.server import CONFIG
 from thefuzz import fuzz, process
 
 
@@ -23,9 +24,57 @@ class LibraryData:
 PLEX_URL = ''
 PLEX_TOKEN = ''
 
+def update_config(config_path):
+    updated = False
+    with open(config_path, 'r') as configfile:
+        lines = configfile.readlines()
+
+    with open(config_path, 'w') as configfile:
+        for line in lines:
+            if line.startswith('server_baseurl'):
+                configfile.write(f'server_baseurl = {PLEX_URL}\n')
+                updated = True
+            elif line.startswith('server_token'):
+                configfile.write(f'server_token = {PLEX_TOKEN}\n')
+                updated = True
+            else:
+                configfile.write(line)
+
+    return updated
+
 # Environmental Variables
-PLEX_URL = os.getenv('PLEX_URL', PLEX_URL)
-PLEX_TOKEN = os.getenv('PLEX_TOKEN', PLEX_TOKEN)
+#PLEX_URL = os.getenv('PLEX_URL', PLEX_URL)
+#PLEX_TOKEN = os.getenv('PLEX_TOKEN', PLEX_TOKEN)
+
+# Get config from file
+if not PLEX_TOKEN:
+    PLEX_TOKEN = CONFIG.data['auth'].get('server_token')
+if not PLEX_URL:
+    PLEX_URL = CONFIG.data['auth'].get('server_baseurl')
+
+# Ask user for config
+if not PLEX_TOKEN or not PLEX_URL:
+    if not PLEX_TOKEN:
+        PLEX_TOKEN = input("Please enter your Plex auth token: ")
+    if not PLEX_URL:
+        PLEX_URL = input("Please enter your Plex URL: ")
+    if input("Save config? (y/n): ") == 'y':
+        config_directory = os.path.expanduser('~/.config/plexapi')
+        os.makedirs(config_directory, exist_ok=True)
+        config_file_path = os.path.join(config_directory, 'config.ini')
+
+        if not os.path.exists(config_file_path):
+            with open(config_file_path, 'w') as configfile:
+                configfile.write('[auth]\n')
+                configfile.write(f'server_baseurl = {PLEX_URL}\n')
+                configfile.write(f'server_token = {PLEX_TOKEN}\n')
+        else:
+            if update_config(config_file_path):
+                print("Config file updated.")
+            else:
+                print("Config file already contains data, but server_baseurl and server_token were not found. Please update it manually.")
+
+
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
 allLibraries = []
 for library in plex.library.sections():

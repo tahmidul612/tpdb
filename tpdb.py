@@ -21,8 +21,10 @@ class LibraryData:
         self.type = type
         self.locations = locations
 
+
 PLEX_URL = ''
 PLEX_TOKEN = ''
+
 
 def update_config(config_path):
     updated = False
@@ -43,14 +45,16 @@ def update_config(config_path):
     return updated
 
 # Environmental Variables
-#PLEX_URL = os.getenv('PLEX_URL', PLEX_URL)
-#PLEX_TOKEN = os.getenv('PLEX_TOKEN', PLEX_TOKEN)
+# PLEX_URL = os.getenv('PLEX_URL', PLEX_URL)
+# PLEX_TOKEN = os.getenv('PLEX_TOKEN', PLEX_TOKEN)
+
 
 # Get config from file
-if not PLEX_TOKEN:
-    PLEX_TOKEN = CONFIG.data['auth'].get('server_token')
-if not PLEX_URL:
-    PLEX_URL = CONFIG.data['auth'].get('server_baseurl')
+if CONFIG:
+    if not PLEX_TOKEN:
+        PLEX_TOKEN = CONFIG.data['auth'].get('server_token')
+    if not PLEX_URL:
+        PLEX_URL = CONFIG.data['auth'].get('server_baseurl')
 
 # Ask user for config
 if not PLEX_TOKEN or not PLEX_URL:

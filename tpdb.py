@@ -9,6 +9,7 @@ import shutil
 from xmlrpc.client import Boolean
 import zipfile
 import collections
+import requests
 
 from plexapi.server import PlexServer
 from plexapi.server import CONFIG
@@ -120,11 +121,13 @@ def organizeMovieFolder(folderDir):
         matchedMedia = []
         if os.path.isfile(sourceFile):
             if 'Collection' not in file:
-                matchedMedia = process.extractOne(file, mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
+                matchedMedia = process.extractOne(
+                    file, mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
             if opts.force or collection or (matchedMedia and input("Matched poster file %s to movie %s, proceed? (y/n):  " % (file, matchedMedia[0])) == 'y'):
-                fileName = os.path.splitext(os.path.basename(file))[0] if opts.force or collection else matchedMedia[0]
+                fileName = os.path.splitext(os.path.basename(file))[
+                    0] if opts.force or collection else matchedMedia[0]
                 fileExtension = os.path.splitext(file)[1]
                 newFolder = os.path.join(folderDir, fileName)
                 if os.path.isdir(newFolder):
@@ -162,7 +165,8 @@ def organizeShowFolder(folderDir):
 
 def moviePoster():
     for poster in posterFiles:
-        organize = input("Move poster file %s to Custom posters folder? (y/n):  " % os.path.basename(poster))
+        organize = input(
+            "Move poster file %s to Custom posters folder? (y/n):  " % os.path.basename(poster))
         if organize == 'y':
             if 'Custom' not in poster:
                 sourceDir = os.path.dirname(poster)
@@ -183,8 +187,9 @@ def findPosters(posterRootDirs):
             filePath = os.path.join(path1, path2)
             if zipfile.is_zipfile(filePath):
                 zipFilePath = filePath
-                newZipFileName = (path2.split('.',1)[0].split('__',1)[0]+'.'+path2.split('.',1)[1]).replace('_',' ')
-                #newZipFileName = path2.replace('_', ' ')
+                newZipFileName = (path2.split('.', 1)[0].split('__', 1)[
+                                  0]+'.'+path2.split('.', 1)[1]).replace('_', ' ')
+                # newZipFileName = path2.replace('_', ' ')
                 newZipFilePath = os.path.join(path1, newZipFileName)
                 if path2 != newZipFileName:
                     os.rename(zipFilePath, newZipFilePath)
@@ -195,6 +200,8 @@ def findPosters(posterRootDirs):
                 posterFiles.append(filePath)
             else:
                 continue
+
+
 def movePosters(posterFolder):
     mediaFolders = mediaFolderNames.get(os.path.basename(posterFolder))
     if mediaFolders:
@@ -204,27 +211,33 @@ def movePosters(posterFolder):
             replaceFiles = False
             for poster in posterFileNames:
                 for mediaRoot in mediaFolders:
-                    orig_file = os.path.join(posterFolder,poster)
+                    orig_file = os.path.join(posterFolder, poster)
                     new_name = poster
                     if 'Season00' in poster:
-                        new_name = poster.replace('Season00', 'season-specials-poster')
+                        new_name = poster.replace(
+                            'Season00', 'season-specials-poster')
                     elif 'Season' in poster:
-                        new_name = poster.split('.')[0].lower()+'-poster'+'.'+poster.split('.')[1]
-                    new_file = os.path.join(mediaRoot,mediaName,new_name)
+                        new_name = poster.split('.')[0].lower(
+                        )+'-poster'+'.'+poster.split('.')[1]
+                    new_file = os.path.join(mediaRoot, mediaName, new_name)
                     if check_file(os.path.dirname(new_file), os.path.splitext(new_name)[0]):
-                        if os.path.isfile(new_file) and os.path.samefile(orig_file,new_file):
+                        if os.path.isfile(new_file) and os.path.samefile(orig_file, new_file):
                             continue
                         else:
                             prompt = "Replace existing files? (y/n): "
                             if opts.all:
-                                prompt = "Replace all poster files in %s? (y/n): " % os.path.dirname(new_file)
+                                prompt = "Replace all poster files in %s? (y/n): " % os.path.dirname(
+                                    new_file)
                             if replaceFiles or input(prompt) == 'y':
                                 replaceFiles = True
-                                delete_file(os.path.dirname(new_file), os.path.splitext(new_name)[0], False)
+                                delete_file(os.path.dirname(new_file),
+                                            os.path.splitext(new_name)[0], False)
                             else:
-                                print("Skipping folder %s" % os.path.dirname(new_file))
+                                print("Skipping folder %s" %
+                                      os.path.dirname(new_file))
                                 continue
-                    os.link(orig_file,new_file)
+                    os.link(orig_file, new_file)
+
 
 def processZipFile():
     for posterZip in posterZipFiles.keys():
@@ -262,22 +275,27 @@ def processZipFile():
                         organizeMovieFolder(destinationDir)
                     moveZip = input(
                         "Move zip file to archive folder? (y/n):  ")
-                    if(moveZip == 'y'):
+                    if (moveZip == 'y'):
                         shutil.move(sourceZip, os.path.join(
                             POSTER_DIR, 'Archives'))
         else:
             print('Skipped files\n')
+
+
 def check_file(dir, prefix):
     for s in os.listdir(dir):
         if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(dir, s)):
             return True
     return False
+
+
 def delete_file(dir, prefix, prompt: Boolean):
     for s in os.listdir(dir):
         filePath = os.path.join(dir, s)
         if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
             if not prompt or input("Delete %s? (y/n): " % filePath) == 'y':
                 os.remove(filePath)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -290,6 +308,8 @@ if __name__ == '__main__':
                         choices=['sync', 'new'], default='new')
     parser.add_argument('-f', '--force', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
+    parser.add_argument('--server', nargs='?',
+                        choices=['plex', 'emby', 'all'], default='plex')
     parser.add_argument('-d', '--download', nargs='?')
     opts = parser.parse_args()
 
@@ -317,21 +337,26 @@ if __name__ == '__main__':
             ##########################################
             if opts.server == 'emby' and (selectedLibrary.type == 'movie' or selectedLibrary.type == 'show'):
                 for path in selectedLibrary.locations:
-                    for name in os.listdir(path): mediaFolderNames[name].append(path)
+                    for name in os.listdir(path):
+                        mediaFolderNames[name].append(path)
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
                     POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
                 posterFolders = []
                 if selectedLibrary.type == 'movie':
                     for folder in posterRootDirs:
-                        allPaths = glob.glob(os.path.join(glob.escape(folder),'*','*'))
-                        posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
+                        allPaths = glob.glob(os.path.join(
+                            glob.escape(folder), '*', '*'))
+                        posterFolders.extend(
+                            filter(lambda f: os.path.isdir(f), allPaths))
                 elif selectedLibrary.type == 'show':
                     for folder in posterRootDirs:
-                        allPaths = glob.glob(os.path.join(glob.escape(folder),'*'))
-                        posterFolders.extend(filter(lambda f: os.path.isdir(f), allPaths))
+                        allPaths = glob.glob(
+                            os.path.join(glob.escape(folder), '*'))
+                        posterFolders.extend(
+                            filter(lambda f: os.path.isdir(f), allPaths))
                 for folder in posterFolders:
                     movePosters(folder)
-                
+
             #############################
             ### Process movie posters ###
             #############################
@@ -339,7 +364,8 @@ if __name__ == '__main__':
                 # Get all media folders in the library
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
-                    for name in os.listdir(path): mediaFolderNames[name].append(path)
+                    for name in os.listdir(path):
+                        mediaFolderNames[name].append(path)
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
@@ -366,7 +392,8 @@ if __name__ == '__main__':
                 # Get all media folders in the library
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
-                    for name in os.listdir(path): mediaFolderNames[name].append(path)
+                    for name in os.listdir(path):
+                        mediaFolderNames[name].append(path)
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(

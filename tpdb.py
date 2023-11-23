@@ -92,6 +92,27 @@ posterFolders = []
 posterFiles = []
 mediaFolderNames = collections.defaultdict(list)
 
+
+def downloadPoster(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        filename = response.headers.get('content-disposition', None)
+        if filename:
+            filename = filename.split('filename=')[1].strip('"')
+        else:
+            filename = os.path.basename(url)
+
+        with open(filename, 'wb') as file:
+            file.write(response.content)
+        print(f"File downloaded as '{filename}'")
+    else:
+        print("Failed to download the file")
+
+
 def organizeMovieFolder(folderDir):
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
@@ -269,10 +290,13 @@ if __name__ == '__main__':
                         choices=['sync', 'new'], default='new')
     parser.add_argument('-f', '--force', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
-    parser.add_argument('--server', nargs='?', choices=['plex','emby','all'], default='plex')
+    parser.add_argument('-d', '--download', nargs='?')
     opts = parser.parse_args()
 
-    if opts.libraries:
+    if opts.download:
+        downloadPoster(opts.download)
+
+    elif opts.libraries:
         for library in opts.libraries:
             selectedLibrary = LibraryData
             for lib in allLibraries:

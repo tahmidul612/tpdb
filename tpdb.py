@@ -17,7 +17,7 @@ from thefuzz import fuzz, process
 
 # Data classes
 class LibraryData:
-    def __init__(self, title, type, locations):
+    def __init__(self, title=None, type=None, locations=None):
         self.title = title
         self.type = type
         self.locations = locations
@@ -87,7 +87,7 @@ if not PLEX_TOKEN or not PLEX_URL:
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
 allLibraries = []
 for library in plex.library.sections():
-    if library.type not in ['artist', 'photo']:
+    if library.type not in ['artist', 'photo'] and library.locations:
         allLibraries.append(LibraryData(
             library.title, library.type, library.locations))
 ################################## End Plex Config #######################################
@@ -324,7 +324,7 @@ if __name__ == '__main__':
     # Process posters
     elif opts.libraries:
         for library in opts.libraries:
-            selectedLibrary = LibraryData
+            selectedLibrary = LibraryData()
             for lib in allLibraries:
                 if lib.title == library:
                     selectedLibrary = lib

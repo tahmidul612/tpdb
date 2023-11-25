@@ -104,8 +104,13 @@ def downloadPoster(url):
             filename = filename.split('filename=')[1].strip('"')
         else:
             filename = os.path.basename(url)
-
-        with open(filename, 'wb') as file:
+        print("Select folder to save poster file")
+        for i, dir in enumerate(os.listdir(POSTER_DIR)):
+            print(f"{i}: {dir}")
+        dirIndex = input("Enter folder number: ")
+        saveDir = os.path.join(
+            POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex)])
+        with open(os.path.join(saveDir, filename), 'wb') as file:
             file.write(response.content)
         print(f"File downloaded as '{filename}'")
     else:

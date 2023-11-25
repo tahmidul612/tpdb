@@ -1,0 +1,5 @@
+{
+  "python.analysis.typeCheckingMode": "basic",
+  "cSpell.words": ["configfile", "KHTML", "plexapi", "thefuzz"],
+  "python.analysis.autoImportCompletions": false
+}

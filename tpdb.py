@@ -333,7 +333,7 @@ if __name__ == '__main__':
                 selectedLibrary = None
                 break
             global poster
-            poster = Posters()
+            poster = Posters([], [], {}, collections.defaultdict(list))
 
             ####################################
             ### Organize and/or copy posters ###

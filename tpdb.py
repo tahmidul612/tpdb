@@ -314,8 +314,7 @@ if __name__ == '__main__':
                         choices=['sync', 'new'], default='new')
     parser.add_argument('-f', '--force', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
-    parser.add_argument('--server', nargs='?',
-                        choices=['plex', 'emby', 'all'], default='plex')
+    parser.add_argument('-c', '--copy', action='store_true', default=False)
     parser.add_argument('-d', '--download', nargs='?')
     opts = parser.parse_args()
 
@@ -337,36 +336,10 @@ if __name__ == '__main__':
             global poster
             poster = Posters()
 
-
-            #################################
-            ### Copy posters to media dir ###
-            #################################
-            if opts.server == 'emby' and (selectedLibrary.type == 'movie' or selectedLibrary.type == 'show'):
-                for path in selectedLibrary.locations:
-                    for name in os.listdir(path):
-                        poster.mediaFolderNames[name].append(path)
-                posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
-                    POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
-                poster.posterFolders = []
-                if selectedLibrary.type == 'movie':
-                    for folder in posterRootDirs:
-                        allPaths = glob.glob(os.path.join(
-                            glob.escape(folder), '*', '*'))
-                        poster.posterFolders.extend(
-                            filter(lambda f: os.path.isdir(f), allPaths))
-                elif selectedLibrary.type == 'show':
-                    for folder in posterRootDirs:
-                        allPaths = glob.glob(
-                            os.path.join(glob.escape(folder), '*'))
-                        poster.posterFolders.extend(
-                            filter(lambda f: os.path.isdir(f), allPaths))
-                for folder in poster.posterFolders:
-                    movePosters(folder)
-
-            #############################
-            ### Process movie posters ###
-            #############################
-            elif selectedLibrary.type == 'movie':
+            ####################################
+            ### Organize and/or copy posters ###
+            ####################################
+            if selectedLibrary.type in ['movie', 'show']:
                 # Get all media folders in the library
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
@@ -377,45 +350,34 @@ if __name__ == '__main__':
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
                     POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
                 findPosters(posterRootDirs)
-                if opts.action == 'new':
-                    moviePoster()
-                    processZipFile()
-                elif opts.action == 'sync':
-                    for folder in poster.posterFolders:
-                        posterExists = False
-                        for path in os.listdir(folder):
-                            if os.path.isfile(os.path.join(folder, path)):
-                                posterExists = True
-                        if posterExists and input("Process folder \"%s\"? (y/n):  " % folder) == 'y':
-                            organizeMovieFolder(folder)
-                if opts.server == 'all':
-                    for folder in poster.posterFolders:
-                        movePosters(folder)
-            ############################
-            ### Process show posters ###
-            ############################
-            elif selectedLibrary.type == 'show':
-                # Get all media folders in the library
-                # mediaPaths["NAME OF THE MEDIA FOLDER",...]
-                for path in selectedLibrary.locations:
-                    for name in os.listdir(path):
-                        poster.mediaFolderNames[name].append(path)
 
-                # Get poster root directories for the library
-                posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
-                    POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
-                findPosters(posterRootDirs)
-                if opts.action == 'new':
-                    processZipFile()
-                elif opts.action == 'sync':
-                    unorganizedPosterFolders = []
-                    for folder in poster.posterFolders:
-                        if not check_file(folder, "poster"):
-                            unorganizedPosterFolders.append(folder)
-                    for folder in unorganizedPosterFolders:
-                        organizeShowFolder(folder)
+                match selectedLibrary.type:
+                    case 'movie':
+                        if opts.action == 'new':
+                            moviePoster()
+                            processZipFile()
+                        elif opts.action == 'sync':
+                            for folder in poster.posterFolders:
+                                posterExists = False
+                                for path in os.listdir(folder):
+                                    if os.path.isfile(os.path.join(folder, path)):
+                                        posterExists = True
+                                if posterExists and input("Process folder \"%s\"? (y/n):  " % folder) == 'y':
+                                    organizeMovieFolder(folder)
+                    case 'show':
+                        if opts.action == 'new':
+                            processZipFile()
+                        elif opts.action == 'sync':
+                            unorganizedPosterFolders = []
+                            for folder in poster.posterFolders:
+                                if not check_file(folder, "poster"):
+                                    unorganizedPosterFolders.append(folder)
+                            for folder in unorganizedPosterFolders:
+                                organizeShowFolder(folder)
+                # Move posters to media folders
                 if opts.server == 'all':
                     for folder in poster.posterFolders:
-                        movePosters(folder)
+                        copyPosters(folder)
+
             else:
                 print("Library type not setup yet")

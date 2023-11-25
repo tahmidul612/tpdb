@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "njpwerner.autodocstring",
+    "ms-python.autopep8",
+    "bierner.github-markdown-preview",
+    "gruntfuggly.todo-tree",
+    "ms-python.python",
+    "visualstudioexptteam.vscodeintellicode",
+    "kevinrose.vsc-python-indent",
+    "donjayamanne.python-environment-manager"
+  ]
+}

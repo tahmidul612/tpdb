@@ -2,7 +2,6 @@
 from __future__ import print_function, unicode_literals
 
 import argparse
-import glob
 import os
 import re
 import shutil
@@ -16,6 +15,7 @@ from plexapi.server import CONFIG
 from thefuzz import fuzz, process
 
 
+# Data classes
 class LibraryData:
     def __init__(self, title, type, locations):
         self.title = title
@@ -30,11 +30,12 @@ class Posters:
         self.posterZipFiles = posterZipFiles
         self.mediaFolderNames = mediaFolderNames
 
-
+# Global static variables
 PLEX_URL = ''
 PLEX_TOKEN = ''
+POSTER_DIR = '/data/Posters'
 
-
+################################# Start Plex Config #######################################
 def update_config(config_path):
     updated = False
     with open(config_path, 'r') as configfile:
@@ -52,11 +53,6 @@ def update_config(config_path):
                 configfile.write(line)
 
     return updated
-
-# Environmental Variables
-# PLEX_URL = os.getenv('PLEX_URL', PLEX_URL)
-# PLEX_TOKEN = os.getenv('PLEX_TOKEN', PLEX_TOKEN)
-
 
 # Get config from file
 if CONFIG:
@@ -94,7 +90,7 @@ for library in plex.library.sections():
     if library.type not in ['artist', 'photo']:
         allLibraries.append(LibraryData(
             library.title, library.type, library.locations))
-POSTER_DIR = '/data/Posters'
+################################## End Plex Config #######################################
 
 def downloadPoster(url):
     headers = {
@@ -114,7 +110,6 @@ def downloadPoster(url):
         print(f"File downloaded as '{filename}'")
     else:
         print("Failed to download the file")
-
 
 def organizeMovieFolder(folderDir):
     for file in os.listdir(folderDir):
@@ -206,7 +201,7 @@ def findPosters(posterRootDirs):
                 continue
 
 
-def movePosters(posterFolder):
+def copyPosters(posterFolder):
     global poster
     mediaFolders = poster.mediaFolderNames.get(os.path.basename(posterFolder))
     if mediaFolders:
@@ -309,13 +304,17 @@ if __name__ == '__main__':
         "Reorganize The Poster DB files to work with Plex Meta Manager", formatter_class=argparse.RawTextHelpFormatter)
     libraryNames = [library.title for library in allLibraries]
     parser.add_argument('--libraries', nargs='+',
-                        choices=libraryNames, default=libraryNames)
+                        choices=libraryNames, default=libraryNames, help='Name of the Plex libraries to process')
     parser.add_argument('--action', nargs='?',
-                        choices=['sync', 'new'], default='new')
-    parser.add_argument('-f', '--force', action='store_true')
-    parser.add_argument('-a', '--all', action='store_true')
-    parser.add_argument('-c', '--copy', action='store_true', default=False)
-    parser.add_argument('-d', '--download', nargs='?')
+                        choices=['sync', 'new'], default='new', help='Organize new posters or sync existing posters')
+    parser.add_argument('-f', '--force', action='store_true', default=False,
+                        help='Process movie posters without matching to a media folder')
+    parser.add_argument('-a', '--all', action='store_true', default=False,
+                        help='Replace all poster files in media folder without prompting')
+    parser.add_argument('-c', '--copy', action='store_true',
+                        default=False, help='Copy posters to media folders')
+    parser.add_argument('-d', '--download', nargs='?',
+                        help='Download a poster from a URL')
     opts = parser.parse_args()
 
     # Download poster
@@ -375,7 +374,7 @@ if __name__ == '__main__':
                             for folder in unorganizedPosterFolders:
                                 organizeShowFolder(folder)
                 # Move posters to media folders
-                if opts.server == 'all':
+                if opts.copy:
                     for folder in poster.posterFolders:
                         copyPosters(folder)
 

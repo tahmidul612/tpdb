@@ -1,9 +1,53 @@
-# Automation for ThePosterDB
+# Plex Poster Organizer
 
-To download poster set
-> [preserve remote filename when downloading with curl](<https://stackoverflow.com/questions/7451299/how-do-i-preserve-the-remote-filename-when-downloading-a-file-using-curl>)
+Plex Poster Organizer is a Python utility designed to organize movie and TV show posters fetched from 'The Poster DB' and match them with respective media folders in a Plex library. This tool facilitates the seamless arrangement and association of posters with media content within a Plex server.
+
+## Table of Contents
+
+- [Plex Poster Organizer](#plex-poster-organizer)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Setup](#setup)
+    - [Plex Configuration](#plex-configuration)
+  - [Usage](#usage)
+
+## Installation
+
+To install and run the Plex Poster Organizer utility, follow these steps:
+
+1. Clone this repository:
+
+    ```console
+    git clone https://github.com/tahmidul612/tpdb.git
+    cd tpdb
+    ```
+
+1. Install dependencies:
+
+    ```console
+    pip install -r requirements.txt
+    ```
+
+## Setup
+
+### Plex Configuration
+
+Before using the utility, configure your Plex server details:
+
+1. Open the `config.ini` file.
+2. Enter your Plex server URL and authentication token in the respective fields:
+
+```ini
+server_baseurl = Your_Plex_Server_URL
+server_token = Your_Plex_Auth_Token
+```
+
+## Usage
+
+To use the Plex Poster Organizer, follow these steps:
+
+Run the script:
 
 ```console
-curl -O -J https://theposterdb.com/set/download/151052
-curl -O -J https://theposterdb.com/api/assets/432035
+python tpdb.py
 ```

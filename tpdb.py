@@ -96,8 +96,19 @@ def downloadPoster(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
-
-    response = requests.get(url, headers=headers)
+    if 'theposterdb.com/set' in url:
+        posterID = url.split('/')[-1]
+        downloadUrl = f'https://theposterdb.com/set/download/{posterID}'
+    elif 'theposterdb.com/poster' in url:
+        posterID = url.split('/')[-1]
+        downloadUrl = f'https://theposterdb.com/api/assets/{posterID}'
+    else:
+        downloadUrl = None
+    if downloadUrl:
+        response = requests.get(downloadUrl, headers=headers)
+    else:
+        print("Invalid URL")
+        return
     if response.status_code == 200:
         filename = response.headers.get('content-disposition', None)
         if filename:
@@ -327,7 +338,7 @@ if __name__ == '__main__':
         downloadPoster(opts.download)
 
     # Process posters
-    elif opts.libraries:
+    if opts.libraries:
         for library in opts.libraries:
             selectedLibrary = LibraryData()
             for lib in allLibraries:

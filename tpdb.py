@@ -116,11 +116,11 @@ def downloadPoster(url):
         else:
             filename = os.path.basename(url)
         print("Select folder to save poster file")
-        for i, dir in enumerate(os.listdir(POSTER_DIR)):
+        for i, dir in enumerate(os.listdir(POSTER_DIR), start=1):
             print(f"{i}: {dir}")
         dirIndex = input("Enter folder number: ")
         saveDir = os.path.join(
-            POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex)])
+            POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex)-1])
         with open(os.path.join(saveDir, filename), 'wb') as file:
             file.write(response.content)
         print(f"File downloaded as '{filename}'")
@@ -128,6 +128,7 @@ def downloadPoster(url):
         print("Failed to download the file")
 
 def organizeMovieFolder(folderDir):
+    global poster_data
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
         collection = False
@@ -135,7 +136,7 @@ def organizeMovieFolder(folderDir):
         if os.path.isfile(sourceFile):
             if 'Collection' not in file:
                 matchedMedia = process.extractOne(
-                    file, poster.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
+                    file, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
             if opts.force or collection or (matchedMedia and input("Matched poster file %s to movie %s, proceed? (y/n):  " % (file, matchedMedia[0])) == 'y'):
@@ -152,6 +153,7 @@ def organizeMovieFolder(folderDir):
 
 
 def organizeShowFolder(folderDir):
+    global poster_data
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
         if os.path.isfile(sourceFile):
@@ -177,8 +179,8 @@ def organizeShowFolder(folderDir):
 
 
 def moviePoster():
-    global poster
-    for poster in poster.posterFiles:
+    global poster_data
+    for poster in poster_data.posterFiles:
         organize = input(
             "Move poster file %s to Custom posters folder? (y/n):  " % os.path.basename(poster))
         if organize == 'y':
@@ -196,7 +198,7 @@ def moviePoster():
 
 
 def findPosters(posterRootDirs):
-    global poster
+    global poster_data
     for path1 in posterRootDirs:
         for path2 in os.listdir(path1):
             filePath: str = os.path.join(path1, path2)
@@ -208,18 +210,18 @@ def findPosters(posterRootDirs):
                 newZipFilePath = os.path.join(path1, newZipFileName)
                 if path2 != newZipFileName:
                     os.rename(zipFilePath, newZipFilePath)
-                poster.posterZipFiles[newZipFileName] = newZipFilePath
+                poster_data.posterZipFiles[newZipFileName] = newZipFilePath
             elif os.path.isdir(filePath):
-                poster.posterFolders.append(filePath)
+                poster_data.posterFolders.append(filePath)
             elif os.path.isfile(filePath):
-                poster.posterFiles.append(filePath)
+                poster_data.posterFiles.append(filePath)
             else:
                 continue
 
 
 def copyPosters(posterFolder):
-    global poster
-    mediaFolders = poster.mediaFolderNames.get(os.path.basename(posterFolder))
+    global poster_data
+    mediaFolders = poster_data.mediaFolderNames.get(os.path.basename(posterFolder))
     if mediaFolders:
         mediaName = os.path.basename(posterFolder)
         posterFileNames = os.listdir(posterFolder)
@@ -256,19 +258,19 @@ def copyPosters(posterFolder):
 
 
 def processZipFile():
-    global poster
-    for posterZip in poster.posterZipFiles.keys():
-        sourceZip = poster.posterZipFiles.get(posterZip)
+    global poster_data
+    for posterZip in poster_data.posterZipFiles.keys():
+        sourceZip = poster_data.posterZipFiles.get(posterZip)
         destinationDir = ''
         unzip = ''
         if selectedLibrary.type == 'show':
             matchedMedia = process.extractOne(
-                posterZip, poster.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
+                posterZip, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             if matchedMedia:
                 destinationDir = os.path.join(os.path.dirname(
-                    poster.posterZipFiles.get(posterZip)), matchedMedia[0])
-                unzip = input("Matched zip file %s to show %s, proceed? (y/n):  " %
-                              (os.path.basename(sourceZip), matchedMedia[0]))
+                    poster_data.posterZipFiles.get(posterZip)), matchedMedia[0])
+                unzip = input("Matched zip file %s to show %s [score: %d], proceed? (y/n):  " %
+                              (os.path.basename(sourceZip), matchedMedia[0], matchedMedia[1]))
             else:
                 print('No matching media found\n')
                 continue
@@ -348,8 +350,8 @@ if __name__ == '__main__':
             else:
                 selectedLibrary = None
                 break
-            global poster
-            poster = Posters([], [], {}, collections.defaultdict(list))
+            global poster_data
+            poster_data = Posters([], [], {}, collections.defaultdict(list))
 
             ####################################
             ### Organize and/or copy posters ###
@@ -359,7 +361,7 @@ if __name__ == '__main__':
                 # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
                     for name in os.listdir(path):
-                        poster.mediaFolderNames[name].append(path)
+                        poster_data.mediaFolderNames[name].append(path)
 
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
@@ -372,7 +374,7 @@ if __name__ == '__main__':
                             moviePoster()
                             processZipFile()
                         elif opts.action == 'sync':
-                            for folder in poster.posterFolders:
+                            for folder in poster_data.posterFolders:
                                 posterExists = False
                                 for path in os.listdir(folder):
                                     if os.path.isfile(os.path.join(folder, path)):
@@ -384,14 +386,14 @@ if __name__ == '__main__':
                             processZipFile()
                         elif opts.action == 'sync':
                             unorganizedPosterFolders = []
-                            for folder in poster.posterFolders:
+                            for folder in poster_data.posterFolders:
                                 if not check_file(folder, "poster"):
                                     unorganizedPosterFolders.append(folder)
                             for folder in unorganizedPosterFolders:
                                 organizeShowFolder(folder)
                 # Move posters to media folders
                 if opts.copy:
-                    for folder in poster.posterFolders:
+                    for folder in poster_data.posterFolders:
                         copyPosters(folder)
 
             else:

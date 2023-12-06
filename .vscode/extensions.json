@@ -7,6 +7,7 @@
     "ms-python.python",
     "visualstudioexptteam.vscodeintellicode",
     "kevinrose.vsc-python-indent",
-    "donjayamanne.python-environment-manager"
+    "donjayamanne.python-environment-manager",
+    "ms-python.isort"
   ]
 }

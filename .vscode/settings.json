@@ -1,5 +1,14 @@
 {
   "python.analysis.typeCheckingMode": "basic",
-  "cSpell.words": ["configfile", "KHTML", "plexapi", "thefuzz", "tpdb"],
+  "cSpell.words": [
+    "configfile",
+    "KHTML",
+    "miniters",
+    "plexapi",
+    "thefuzz",
+    "tpdb",
+    "tqdm",
+    "wrapattr"
+  ],
   "python.analysis.autoImportCompletions": false
 }

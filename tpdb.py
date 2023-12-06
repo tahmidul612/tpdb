@@ -2,18 +2,18 @@
 from __future__ import print_function, unicode_literals
 
 import argparse
+import collections
 import os
 import re
 import shutil
-from xmlrpc.client import Boolean
 import zipfile
-import collections
-import requests
-from tqdm.auto import tqdm
+from xmlrpc.client import Boolean
 
-from plexapi.server import PlexServer
-from plexapi.server import CONFIG
+import pyrfc6266
+import requests
+from plexapi.server import CONFIG, PlexServer
 from thefuzz import fuzz, process
+from tqdm.auto import tqdm
 
 
 # Data classes
@@ -31,12 +31,15 @@ class Posters:
         self.posterZipFiles = posterZipFiles
         self.mediaFolderNames = mediaFolderNames
 
+
 # Global static variables
 PLEX_URL = ''
 PLEX_TOKEN = ''
 POSTER_DIR = '/data/Posters'
 
 ################################# Start Plex Config #######################################
+
+
 def update_config(config_path):
     updated = False
     with open(config_path, 'r') as configfile:
@@ -54,6 +57,7 @@ def update_config(config_path):
                 configfile.write(line)
 
     return updated
+
 
 # Get config from file
 if CONFIG:
@@ -93,6 +97,7 @@ for library in plex.library.sections():
             library.title, library.type, library.locations))
 ################################## End Plex Config #######################################
 
+
 def downloadPoster(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
@@ -113,7 +118,7 @@ def downloadPoster(url):
     if response.status_code == 200:
         filename = response.headers.get('content-disposition', None)
         if filename:
-            filename = filename.split('filename=')[1].strip('"')
+            filename = pyrfc6266.parse_filename(filename)
         else:
             filename = os.path.basename(url)
         print("Select folder to save poster file")
@@ -130,6 +135,7 @@ def downloadPoster(url):
         print(f"File downloaded as '{filename}'")
     else:
         print("Failed to download the file")
+
 
 def organizeMovieFolder(folderDir):
     global poster_data
@@ -225,7 +231,8 @@ def findPosters(posterRootDirs):
 
 def copyPosters(posterFolder):
     global poster_data
-    mediaFolders = poster_data.mediaFolderNames.get(os.path.basename(posterFolder))
+    mediaFolders = poster_data.mediaFolderNames.get(
+        os.path.basename(posterFolder))
     if mediaFolders:
         mediaName = os.path.basename(posterFolder)
         posterFileNames = os.listdir(posterFolder)

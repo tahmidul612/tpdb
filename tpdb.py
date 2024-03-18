@@ -102,14 +102,19 @@ def downloadPoster(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
+    customFilename = None
+    filename = None
     if 'theposterdb.com/set' in url:
         posterID = url.split('/')[-1]
         downloadUrl = f'https://theposterdb.com/set/download/{posterID}'
     elif 'theposterdb.com/poster' in url:
         posterID = url.split('/')[-1]
         downloadUrl = f'https://theposterdb.com/api/assets/{posterID}'
+    elif 'theposterdb.com/api/assets' in url:
+        downloadUrl = url
     else:
-        downloadUrl = None
+        downloadUrl = url
+        customFilename = input("Enter movie name for poster file (no ext): ")
     if downloadUrl:
         response = requests.get(downloadUrl, headers=headers, stream=True)
     else:
@@ -117,10 +122,17 @@ def downloadPoster(url):
         return
     if response.status_code == 200:
         filename = response.headers.get('content-disposition', None)
-        if filename:
+        if not customFilename and filename:
             filename = pyrfc6266.parse_filename(filename)
+        elif customFilename and filename:
+            filename = ''.join([customFilename,os.path.splitext(
+                pyrfc6266.parse_filename(filename))[1]])
+        elif customFilename:
+            filename = ''.join(
+                [customFilename, os.path.splitext(os.path.basename(url))[1]])
         else:
-            filename = os.path.basename(url)
+            print("Could not find a filename, aborting download")
+            return
         print("Select folder to save poster file")
         for i, dir in enumerate(os.listdir(POSTER_DIR), start=1):
             print(f"{i}: {dir}")

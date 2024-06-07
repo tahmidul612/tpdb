@@ -5,6 +5,7 @@
     "KHTML",
     "miniters",
     "plexapi",
+    "pyrfc",
     "thefuzz",
     "tpdb",
     "tqdm",

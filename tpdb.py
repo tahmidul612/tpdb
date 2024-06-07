@@ -318,6 +318,9 @@ def processZipFile():
                     moveZip = input(
                         "Move zip file to archive folder? (y/n):  ")
                     if (moveZip == 'y'):
+                        if os.path.isfile(os.path.join(POSTER_DIR, 'Archives', os.path.basename(sourceZip))):
+                            os.remove(os.path.join(
+                                POSTER_DIR, 'Archives', os.path.basename(sourceZip)))
                         shutil.move(sourceZip, os.path.join(
                             POSTER_DIR, 'Archives'))
         else:

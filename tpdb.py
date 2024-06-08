@@ -125,7 +125,7 @@ def downloadPoster(url):
         if not customFilename and filename:
             filename = pyrfc6266.parse_filename(filename)
         elif customFilename and filename:
-            filename = ''.join([customFilename,os.path.splitext(
+            filename = ''.join([customFilename, os.path.splitext(
                 pyrfc6266.parse_filename(filename))[1]])
         elif customFilename:
             filename = ''.join(
@@ -161,9 +161,12 @@ def organizeMovieFolder(folderDir):
                     file, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
-            if opts.force or collection or (matchedMedia and input("Matched poster file %s to movie %s, proceed? (y/n):  " % (file, matchedMedia[0])) == 'y'):
+            user_in = input(
+                "Matched poster file %s to movie %s, proceed? (y/n/f):  " % (file, matchedMedia[0]))
+            # Choosing option 'f' follows the force renaming logic for the movie folder/poster
+            if opts.force or collection or (matchedMedia and user_in in ['y', 'f']):
                 fileName = os.path.splitext(os.path.basename(file))[
-                    0] if opts.force or collection else matchedMedia[0]
+                    0] if (opts.force or user_in == 'f' or collection) else matchedMedia[0]
                 fileExtension = os.path.splitext(file)[1]
                 newFolder = os.path.join(folderDir, fileName)
                 if os.path.isdir(newFolder):

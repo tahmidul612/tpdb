@@ -161,8 +161,7 @@ def organizeMovieFolder(folderDir):
                     file, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
-            user_in = input(
-                "Matched poster file %s to movie %s, proceed? (y/n/f):  " % (file, matchedMedia[0]))
+            user_in = input("Matched poster file %s to movie %s, proceed? (y/n/f):  " % (file, matchedMedia[0])) if matchedMedia else None
             # Choosing option 'f' follows the force renaming logic for the movie folder/poster
             if opts.force or collection or (matchedMedia and user_in in ['y', 'f']):
                 fileName = os.path.splitext(os.path.basename(file))[

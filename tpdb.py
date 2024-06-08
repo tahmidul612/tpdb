@@ -291,7 +291,7 @@ def processZipFile():
         sourceZip = poster_data.posterZipFiles.get(posterZip)
         destinationDir = ''
         unzip = ''
-        if selectedLibrary.type == 'show':
+        if selectedLibrary and selectedLibrary.type == 'show':
             matchedMedia = process.extractOne(
                 posterZip, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             if matchedMedia:
@@ -302,7 +302,7 @@ def processZipFile():
             else:
                 print('No matching media found\n')
                 continue
-        elif selectedLibrary.type == 'movie':
+        elif selectedLibrary and selectedLibrary.type == 'movie':
             destinationDir = os.path.join(os.path.dirname(
                 sourceZip), os.path.splitext(os.path.basename(sourceZip))[0])
             unzip = input("Unzip file %s? (y/n):  " %
@@ -316,9 +316,9 @@ def processZipFile():
                 except:
                     print("Something went wrong extracting the zip")
                 else:
-                    if selectedLibrary.type == 'show':
+                    if selectedLibrary and selectedLibrary.type == 'show':
                         organizeShowFolder(destinationDir)
-                    elif selectedLibrary.type == 'movie':
+                    elif selectedLibrary and selectedLibrary.type == 'movie':
                         organizeMovieFolder(destinationDir)
                     moveZip = input(
                         "Move zip file to archive folder? (y/n):  ")

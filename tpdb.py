@@ -433,8 +433,12 @@ if __name__ == '__main__':
                 findPosters(posterRootDirs)
                 
                 if opts.filter:
-                    poster_data.posterFolders = [e[0] for e in process.extractBests(
-                        opts.filter, poster_data.posterFolders, scorer=fuzz.partial_token_set_ratio, score_cutoff=80)]
+                    folder_and_score = [e for e in process.extractBests(
+                        opts.filter, poster_data.posterFolders, scorer=fuzz.token_set_ratio, score_cutoff=50)]
+                    if 100 in [s[1] for s in folder_and_score]:
+                        poster_data.posterFolders = [f[0] for f in folder_and_score if f[1] == 100]
+                    else:
+                        poster_data.posterFolders = [f[0] for f in folder_and_score]
                     print(f'Filtered poster folders to search in:\n{poster_data.posterFolders}')
 
                 match selectedLibrary.type:

@@ -15,6 +15,7 @@ from plexapi.server import CONFIG, PlexServer
 from thefuzz import fuzz, process
 from tqdm.auto import tqdm
 
+from pprint import pprint
 
 # Data classes
 class LibraryData:
@@ -161,7 +162,11 @@ def organizeMovieFolder(folderDir):
                     file, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
             else:
                 collection = True
-            user_in = input("Matched poster file %s to movie %s, proceed? (y/n/f):  " % (file, matchedMedia[0])) if matchedMedia else None
+            user_in = ''
+            if opts.force:
+                user_in = 'f'
+            else:
+                user_in = input("Matched poster file %s to movie %s, proceed? (y/n/f):  " % (file, matchedMedia[0])) if matchedMedia else None
             # Choosing option 'f' follows the force renaming logic for the movie folder/poster
             if opts.force or collection or (matchedMedia and user_in in ['y', 'f']):
                 fileName = os.path.splitext(os.path.basename(file))[
@@ -333,6 +338,29 @@ def processZipFile():
         else:
             print('Skipped files\n')
 
+def syncMovieFolder(path):
+    global poster_data
+    if len(os.listdir(path)) > 1:
+        print(path)
+        organizeMovieFolder(path)
+    else:
+        matchedMedia = process.extractOne(
+            path, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio, processor=lambda x: os.path.basename(x), score_cutoff=70)
+        
+        user_in = input("Matched folder %s to movie %s [%d], proceed? (y/n/f):  " %
+                        (os.path.basename(path), matchedMedia[0], matchedMedia[1])) if matchedMedia else None
+        # Choosing option 'f' follows the force renaming logic for the movie folder/poster
+        # if opts.force or (matchedMedia and user_in in ['y', 'f']):
+        #     fileName = os.path.splitext(os.path.basename(file))[
+        #         0] if (opts.force or user_in == 'f' or collection) else matchedMedia[0]
+        #     fileExtension = os.path.splitext(file)[1]
+        #     newFolder = os.path.join(folderDir, fileName)
+        #     if os.path.isdir(newFolder):
+        #         shutil.rmtree(newFolder)
+        #     os.mkdir(newFolder)
+        #     destinationFile = os.path.join(
+        #         newFolder, ("poster%s" % (fileExtension)))
+        #     os.rename(sourceFile, destinationFile)
 
 def check_file(dir, prefix):
     for s in os.listdir(dir):
@@ -354,12 +382,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         "Reorganize The Poster DB files to work with Plex Meta Manager", formatter_class=argparse.RawTextHelpFormatter)
     libraryNames = [library.title for library in allLibraries]
-    parser.add_argument('--libraries', nargs='+',
+    parser.add_argument('-l','--libraries', nargs='+',
                         choices=libraryNames, default=libraryNames, help='Name of the Plex libraries to process')
     parser.add_argument('--action', nargs='?',
                         choices=['sync', 'new'], default='new', help='Organize new posters or sync existing posters')
+    parser.add_argument('-u', '--unlinked', action='store_true',
+                        default=False, help='Find and process unlinked posters')
     parser.add_argument('-f', '--force', action='store_true', default=False,
                         help='Process movie posters without matching to a media folder')
+    parser.add_argument('--filter', nargs='?', help='String filter for source poster folders')
     parser.add_argument('-a', '--all', action='store_true', default=False,
                         help='Replace all poster files in media folder without prompting')
     parser.add_argument('-c', '--copy', action='store_true',
@@ -399,11 +430,37 @@ if __name__ == '__main__':
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
                     POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
-                findPosters(posterRootDirs)
+                
+                if opts.filter:
+                    poster_data.posterFolders = [e[0] for e in process.extractBests(
+                        opts.filter, poster_data.posterFolders, scorer=fuzz.partial_token_set_ratio, score_cutoff=80)]
+                    print(f'Filtered poster folders to search in:\n{poster_data.posterFolders}')
+                else:
+                    findPosters(posterRootDirs)
 
                 match selectedLibrary.type:
                     case 'movie':
-                        if opts.action == 'new':
+                        if opts.unlinked:
+                            moviePosterFolders = []
+                            for folder in poster_data.posterFolders:
+                                moviePosterFolders.extend([os.path.join(folder, name) for name in os.listdir(folder)])
+                            unlinkedFolders = set()
+                            for movie in moviePosterFolders:
+                                posterExists = False
+                                if os.path.isfile(movie):
+                                    unlinkedFolders.add(os.path.dirname(movie))
+                                    continue
+                                for path in os.listdir(movie):
+                                    if os.path.isfile(os.path.join(movie, path)):
+                                        posterExists = True
+                                if posterExists:
+                                    if not any(m in os.path.basename(movie) for m in ['Collection', *poster_data.mediaFolderNames.keys()]) and 'Custom' not in movie:
+                                        unlinkedFolders.add(movie)
+                            # print(*unlinkedFolders, sep='\n\n')
+                            if input(f'{len(unlinkedFolders)} unlinked folders found. Start processing them? (y/n): ') == 'y':
+                                for folder in unlinkedFolders:
+                                    syncMovieFolder(folder)
+                        elif opts.action == 'new':
                             moviePoster()
                             processZipFile()
                         elif opts.action == 'sync':
@@ -412,7 +469,7 @@ if __name__ == '__main__':
                                 for path in os.listdir(folder):
                                     if os.path.isfile(os.path.join(folder, path)):
                                         posterExists = True
-                                if posterExists and input("Process folder \"%s\"? (y/n):  " % folder) == 'y':
+                                if posterExists and (opts.all or input("Process folder \"%s\"? (y/n):  " % folder) == 'y'):
                                     organizeMovieFolder(folder)
                     case 'show':
                         if opts.action == 'new':

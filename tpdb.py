@@ -430,13 +430,12 @@ if __name__ == '__main__':
                 # Get poster root directories for the library
                 posterRootDirs = [os.path.join(POSTER_DIR, path) for path in os.listdir(
                     POSTER_DIR) if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
+                findPosters(posterRootDirs)
                 
                 if opts.filter:
                     poster_data.posterFolders = [e[0] for e in process.extractBests(
                         opts.filter, poster_data.posterFolders, scorer=fuzz.partial_token_set_ratio, score_cutoff=80)]
                     print(f'Filtered poster folders to search in:\n{poster_data.posterFolders}')
-                else:
-                    findPosters(posterRootDirs)
 
                 match selectedLibrary.type:
                     case 'movie':

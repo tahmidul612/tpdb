@@ -295,6 +295,15 @@ def copyPosters(posterFolder):
                     os.link(orig_file, new_file)
 
 
+def findBestMediaMatch(poster_zip_name: str, media_names: list):
+    bestMatch = None
+    bestScore = 0
+    for candidate in media_names:
+        score = fuzz.partial_token_set_ratio(poster_zip_name, candidate)
+        if score > bestScore:
+            bestMatch, bestScore = candidate, score
+    return bestMatch, bestScore
+
 def processZipFile():
     global poster_data
     for posterZip in poster_data.posterZipFiles.keys():
@@ -302,21 +311,24 @@ def processZipFile():
         destinationDir = ''
         unzip = ''
         if selectedLibrary and selectedLibrary.type == 'show':
-            matchedMedia = process.extractOne(
-                posterZip, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio)
-            if matchedMedia:
-                destinationDir = os.path.join(os.path.dirname(
-                    poster_data.posterZipFiles.get(posterZip)), matchedMedia[0])
-                unzip = input("Matched zip file %s to show %s [score: %d], proceed? (y/n):  " %
-                              (os.path.basename(sourceZip), matchedMedia[0], matchedMedia[1]))
+            bestMatch, bestScore = findBestMediaMatch(posterZip, list(poster_data.mediaFolderNames.keys()))
+            if bestMatch:
+                destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
+                unzip = input("Matched zip file %s to show %s [score: %d], proceed? (y/n):  "
+                              % (os.path.basename(sourceZip), bestMatch, bestScore))
             else:
                 print('No matching media found\n')
                 continue
         elif selectedLibrary and selectedLibrary.type == 'movie':
-            destinationDir = os.path.join(os.path.dirname(
-                sourceZip), os.path.splitext(os.path.basename(sourceZip))[0])
-            unzip = input("Unzip file %s? (y/n):  " %
-                          (os.path.basename(sourceZip)))
+            bestMatch, bestScore = findBestMediaMatch(posterZip, list(poster_data.mediaFolderNames.keys()))
+            if bestMatch:
+                destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
+                unzip = input("Matched zip file %s to movie %s [score: %d], proceed? (y/n):  "
+                              % (os.path.basename(sourceZip), bestMatch, bestScore))
+            else:
+                destinationDir = os.path.join(os.path.dirname(sourceZip),
+                                              os.path.splitext(os.path.basename(sourceZip))[0])
+                unzip = input("Unzip file %s? (y/n):  " % (os.path.basename(sourceZip)))
         if unzip == 'y':
             with zipfile.ZipFile(sourceZip, 'r') as zip_ref:
                 try:
@@ -348,7 +360,7 @@ def syncMovieFolder(path):
         organizeMovieFolder(path)
     else:
         matchedMedia = process.extractOne(
-            path, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio, processor=lambda x: os.path.basename(x), score_cutoff=70)
+            path, list(poster_data.mediaFolderNames.keys()), scorer=fuzz.token_sort_ratio, processor=lambda x: os.path.basename(x), score_cutoff=70)
         
         user_in = input("Matched folder %s to movie %s [%d], proceed? (y/n/f):  " %
                         (os.path.basename(path), matchedMedia[0], matchedMedia[1])) if matchedMedia else None

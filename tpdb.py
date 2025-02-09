@@ -406,15 +406,9 @@ if __name__ == '__main__':
     # Process posters
     if opts.libraries:
         for library in opts.libraries:
-            selectedLibrary = LibraryData()
-            for lib in allLibraries:
-                if lib.title == library:
-                    selectedLibrary = lib
-                    break
-            else:
-                selectedLibrary = None
+            selectedLibrary = next((lib for lib in allLibraries if lib.title == library), None)
+            if not selectedLibrary:
                 break
-            global poster_data
             poster_data = Posters([], [], {}, collections.defaultdict(list))
 
             ####################################
@@ -456,10 +450,8 @@ if __name__ == '__main__':
                                 for path in os.listdir(movie):
                                     if os.path.isfile(os.path.join(movie, path)):
                                         posterExists = True
-                                if posterExists:
-                                    if not any(m in os.path.basename(movie) for m in ['Collection', *poster_data.mediaFolderNames.keys()]) and 'Custom' not in movie:
-                                        unlinkedFolders.add(movie)
-                            # print(*unlinkedFolders, sep='\n\n')
+                                if posterExists and not any(m in os.path.basename(movie) for m in ['Collection', *poster_data.mediaFolderNames.keys()]) and 'Custom' not in movie:
+                                    unlinkedFolders.add(movie)
                             if input(f'{len(unlinkedFolders)} unlinked folders found. Start processing them? (y/n): ') == 'y':
                                 for folder in unlinkedFolders:
                                     syncMovieFolder(folder)
@@ -468,20 +460,14 @@ if __name__ == '__main__':
                             processZipFile()
                         elif opts.action == 'sync':
                             for folder in poster_data.posterFolders:
-                                posterExists = False
-                                for path in os.listdir(folder):
-                                    if os.path.isfile(os.path.join(folder, path)):
-                                        posterExists = True
+                                posterExists = any(os.path.isfile(os.path.join(folder, x)) for x in os.listdir(folder))
                                 if posterExists and (opts.all or input("Process folder \"%s\"? (y/n):  " % folder) == 'y'):
                                     organizeMovieFolder(folder)
                     case 'show':
                         if opts.action == 'new':
                             processZipFile()
                         elif opts.action == 'sync':
-                            unorganizedPosterFolders = []
-                            for folder in poster_data.posterFolders:
-                                if not check_file(folder, "poster"):
-                                    unorganizedPosterFolders.append(folder)
+                            unorganizedPosterFolders = [folder for folder in poster_data.posterFolders if not check_file(folder, "poster")]
                             for folder in unorganizedPosterFolders:
                                 organizeShowFolder(folder)
                 # Move posters to media folders

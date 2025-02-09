@@ -295,11 +295,21 @@ def copyPosters(posterFolder):
                     os.link(orig_file, new_file)
 
 
+import string
+
+def normalize_name(name: str) -> str:
+    name = os.path.splitext(name)[0]
+    name = re.sub(r'\s+set by.*$', '', name, flags=re.IGNORECASE).strip()
+    name = name.translate(str.maketrans('', '', string.punctuation)).lower()
+    return name
+
 def findBestMediaMatch(poster_zip_name: str, media_names: list):
     bestMatch = None
     bestScore = 0
+    normPoster = normalize_name(poster_zip_name)
     for candidate in media_names:
-        score = fuzz.partial_token_set_ratio(poster_zip_name, candidate)
+        normCandidate = normalize_name(candidate)
+        score = fuzz.partial_token_set_ratio(normPoster, normCandidate)
         if score > bestScore:
             bestMatch, bestScore = candidate, score
     return bestMatch, bestScore

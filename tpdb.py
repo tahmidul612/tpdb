@@ -299,6 +299,7 @@ import string
 
 def normalize_name(name: str) -> str:
     name = os.path.splitext(name)[0]
+    name = re.sub(r'\(\d{4}\)', '', name)  # remove (year)
     name = re.sub(r'\s+set by.*$', '', name, flags=re.IGNORECASE).strip()
     name = name.translate(str.maketrans('', '', string.punctuation)).lower()
     return name
@@ -309,7 +310,7 @@ def findBestMediaMatch(poster_zip_name: str, media_names: list):
     normPoster = normalize_name(poster_zip_name)
     for candidate in media_names:
         normCandidate = normalize_name(candidate)
-        score = fuzz.partial_token_set_ratio(normPoster, normCandidate)
+        score = fuzz.partial_token_sort_ratio(normPoster, normCandidate)
         if score > bestScore:
             bestMatch, bestScore = candidate, score
     return bestMatch, bestScore

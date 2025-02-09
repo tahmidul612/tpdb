@@ -1,5 +1,5 @@
-PlexAPI==4.15.6
-pyrfc6266==1.0.2
-Requests==2.31.0
-thefuzz==0.20.0
-tqdm==4.66.1
+alive_progress
+pyrfc6266
+thefuzz
+Requests
+PlexAPI

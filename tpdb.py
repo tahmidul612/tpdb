@@ -13,7 +13,7 @@ import pyrfc6266
 import requests
 from plexapi.server import CONFIG, PlexServer
 from thefuzz import fuzz, process
-from tqdm.auto import tqdm
+from alive_progress import alive_bar
 
 from pprint import pprint
 
@@ -140,11 +140,14 @@ def downloadPoster(url):
         dirIndex = input("Enter folder number: ")
         saveDir = os.path.join(
             POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex)-1])
-
-        # Download with progress bar: https://stackoverflow.com/a/61575758
-        with tqdm.wrapattr(open(os.path.join(saveDir, filename), 'wb'), "write", miniters=1, total=int(response.headers.get('content-length', 0)), desc=filename) as file:
+        totalBytes = int(response.headers.get('content-length', 0)) or None  # Ensure totalBytes is set
+        with open(os.path.join(saveDir, filename), 'wb') as file, alive_bar(totalBytes, title=filename, force_tty=True) as bar:
             for chunk in response.iter_content(chunk_size=4096):
                 file.write(chunk)
+                if totalBytes:
+                    bar(len(chunk))
+                else:
+                    bar()  # update spinner
         print(f"File downloaded as '{filename}'")
     else:
         print("Failed to download the file")

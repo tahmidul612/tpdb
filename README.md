@@ -4,12 +4,14 @@ Plex Poster Organizer is a Python utility designed to organize movie and TV show
 
 ## Table of Contents
 
-- [Plex Poster Organizer](#plex-poster-organizer)
-  - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-  - [Setup](#setup)
-    - [Plex Configuration](#plex-configuration)
-  - [Usage](#usage)
+- [Table of Contents](#table-of-contents)
+- [Installation](#installation)
+- [Setup](#setup)
+  - [Plex Configuration](#plex-configuration)
+- [Usage](#usage)
+  - [Download Poster](#download-poster)
+  - [Organize Posters](#organize-posters)
+  - [Sync Posters](#sync-posters)
 
 ## Installation
 
@@ -50,4 +52,28 @@ Run the script:
 
 ```console
 python tpdb.py
+```
+
+### Download Poster
+
+To download a poster from a URL:
+
+```console
+python tpdb.py --download <URL>
+```
+
+### Organize Posters
+
+To organize new posters:
+
+```console
+python tpdb.py --action new
+```
+
+### Sync Posters
+
+To sync existing posters:
+
+```console
+python tpdb.py --action sync
 ```

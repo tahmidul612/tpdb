@@ -315,6 +315,70 @@ def findBestMediaMatch(poster_zip_name: str, media_names: list):
             bestMatch, bestScore = candidate, score
     return bestMatch, bestScore
 
+def organizeMovieCollectionFolder(folderDir):
+    """
+    Organize posters in a collection folder by matching individual poster files
+    to movies in the media library.
+    """
+    global poster_data
+    unmatched_files = []
+
+    for file in os.listdir(folderDir):
+        sourceFile = os.path.join(folderDir, file)
+        if os.path.isfile(sourceFile):
+            # Try to match this poster file to a movie in the library
+            matchedMedia = process.extractOne(
+                file, poster_data.mediaFolderNames.keys(), scorer=fuzz.token_sort_ratio, score_cutoff=60)
+
+            if matchedMedia:
+                user_in = input("Matched poster file %s to movie %s [score: %d], proceed? (y/n/f):  "
+                               % (file, matchedMedia[0], matchedMedia[1]))
+
+                if user_in in ['y', 'f']:
+                    # Determine folder name: use match name for 'y', original file name for 'f'
+                    if user_in == 'y':
+                        folderName = matchedMedia[0]
+                    else:  # user_in == 'f'
+                        folderName = os.path.splitext(file)[0]
+
+                    # Create a subfolder for this movie within the collection folder
+                    movieFolder = os.path.join(folderDir, folderName)
+                    if os.path.isdir(movieFolder):
+                        shutil.rmtree(movieFolder)
+                    os.mkdir(movieFolder)
+
+                    fileExtension = os.path.splitext(file)[1]
+                    destinationFile = os.path.join(movieFolder, ("poster%s" % fileExtension))
+                    os.rename(sourceFile, destinationFile)
+                    print(f"Organized {file} into {folderName} folder")
+                else:
+                    print(f"Skipped {file}")
+                    continue
+            else:
+                # No match found - ask if user wants to force rename
+                user_in = input("No match found for poster file %s. Force rename? (y/n):  " % file)
+                if user_in == 'y':
+                    folderName = os.path.splitext(file)[0]
+
+                    # Create a subfolder within the collection folder
+                    movieFolder = os.path.join(folderDir, folderName)
+                    if os.path.isdir(movieFolder):
+                        shutil.rmtree(movieFolder)
+                    os.mkdir(movieFolder)
+
+                    fileExtension = os.path.splitext(file)[1]
+                    destinationFile = os.path.join(movieFolder, ("poster%s" % fileExtension))
+                    os.rename(sourceFile, destinationFile)
+                    print(f"Organized {file} into {folderName} folder")
+                else:
+                    unmatched_files.append(file)
+
+    if unmatched_files:
+        print(f"\nUnmatched files in {folderDir}:")
+        for file in unmatched_files:
+            print(f"  - {file}")
+        print("These files were left in the collection folder for manual organization.")
+
 def processZipFile():
     global poster_data
     for posterZip in poster_data.posterZipFiles.keys():
@@ -332,14 +396,20 @@ def processZipFile():
                 continue
         elif selectedLibrary and selectedLibrary.type == 'movie':
             bestMatch, bestScore = findBestMediaMatch(posterZip, list(poster_data.mediaFolderNames.keys()))
-            if bestMatch:
+            if bestMatch and bestScore > 70:  # Only use direct match if score is high enough
                 destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
                 unzip = input("Matched zip file %s to movie %s [score: %d], proceed? (y/n):  "
                               % (os.path.basename(sourceZip), bestMatch, bestScore))
             else:
+                # For movie sets/collections, unzip with current name and organize individually
                 destinationDir = os.path.join(os.path.dirname(sourceZip),
                                               os.path.splitext(os.path.basename(sourceZip))[0])
-                unzip = input("Unzip file %s? (y/n):  " % (os.path.basename(sourceZip)))
+                if bestMatch:
+                    unzip = input("Low match score (%d) for %s to %s. Unzip as collection and organize individually? (y/n):  "
+                                  % (bestScore, os.path.basename(sourceZip), bestMatch))
+                else:
+                    unzip = input("No direct match found for %s. Unzip as collection and organize individually? (y/n):  "
+                                  % os.path.basename(sourceZip))
         if unzip == 'y':
             with zipfile.ZipFile(sourceZip, 'r') as zip_ref:
                 try:
@@ -352,7 +422,15 @@ def processZipFile():
                     if selectedLibrary and selectedLibrary.type == 'show':
                         organizeShowFolder(destinationDir)
                     elif selectedLibrary and selectedLibrary.type == 'movie':
-                        organizeMovieFolder(destinationDir)
+                        # Check if this was a direct match or a collection
+                        bestMatch, bestScore = findBestMediaMatch(posterZip, list(poster_data.mediaFolderNames.keys()))
+                        if bestMatch and bestScore > 70:
+                            # Direct match - use standard organization
+                            organizeMovieFolder(destinationDir)
+                        else:
+                            # Collection/set - organize individual movies within the collection
+                            print(f"\nProcessing collection folder: {os.path.basename(destinationDir)}")
+                            organizeMovieCollectionFolder(destinationDir)
                     moveZip = input(
                         "Move zip file to archive folder? (y/n):  ")
                     if (moveZip == 'y'):

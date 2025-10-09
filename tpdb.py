@@ -19,6 +19,13 @@ from pprint import pprint
 
 # Data classes
 class LibraryData:
+    """A data class to hold information about a Plex library.
+
+    Attributes:
+        title (str): The title of the library.
+        type (str): The type of the library (e.g., 'movie', 'show').
+        locations (list): A list of file paths for the library's content.
+    """
     def __init__(self, title=None, type=None, locations=None):
         self.title = title
         self.type = type
@@ -26,6 +33,15 @@ class LibraryData:
 
 
 class Posters:
+    """A data class to hold information about posters.
+
+    Attributes:
+        posterFolders (list): A list of paths to folders containing posters.
+        posterFiles (list): A list of paths to individual poster files.
+        posterZipFiles (dict): A dictionary mapping zip file names to their paths.
+        mediaFolderNames (collections.defaultdict): A dictionary mapping media folder names
+            to a list of their root paths.
+    """
     def __init__(self, posterFolders=[], posterFiles=[], posterZipFiles={}, mediaFolderNames=collections.defaultdict(list)):
         self.posterFolders = posterFolders
         self.posterFiles = posterFiles
@@ -42,6 +58,14 @@ POSTER_DIR = '/data/Posters'
 
 
 def update_config(config_path):
+    """Updates the PlexAPI config file with the provided URL and token.
+
+    Args:
+        config_path (str): The path to the PlexAPI config file.
+
+    Returns:
+        bool: True if the file was updated, False otherwise.
+    """
     updated = False
     with open(config_path, 'r') as configfile:
         lines = configfile.readlines()
@@ -60,46 +84,16 @@ def update_config(config_path):
     return updated
 
 
-# Get config from file
-if CONFIG:
-    if not PLEX_TOKEN:
-        PLEX_TOKEN = CONFIG.data['auth'].get('server_token')
-    if not PLEX_URL:
-        PLEX_URL = CONFIG.data['auth'].get('server_baseurl')
-
-# Ask user for config
-if not PLEX_TOKEN or not PLEX_URL:
-    if not PLEX_TOKEN:
-        PLEX_TOKEN = input("Please enter your Plex auth token: ")
-    if not PLEX_URL:
-        PLEX_URL = input("Please enter your Plex URL: ")
-    if input("Save config? (y/n): ") == 'y':
-        config_directory = os.path.expanduser('~/.config/plexapi')
-        os.makedirs(config_directory, exist_ok=True)
-        config_file_path = os.path.join(config_directory, 'config.ini')
-
-        if not os.path.exists(config_file_path):
-            with open(config_file_path, 'w') as configfile:
-                configfile.write('[auth]\n')
-                configfile.write(f'server_baseurl = {PLEX_URL}\n')
-                configfile.write(f'server_token = {PLEX_TOKEN}\n')
-        else:
-            if update_config(config_file_path):
-                print("Config file updated.")
-            else:
-                print("Config file already contains data, but server_baseurl and server_token were not found. Please update it manually.")
-
-
-plex = PlexServer(PLEX_URL, PLEX_TOKEN)
-allLibraries = []
-for library in plex.library.sections():
-    if library.type not in ['artist', 'photo'] and library.locations:
-        allLibraries.append(LibraryData(
-            library.title, library.type, library.locations))
-################################## End Plex Config #######################################
-
-
 def downloadPoster(url):
+    """Downloads a poster from a given URL.
+
+    This function can handle URLs from 'theposterdb.com' for sets and individual
+    posters, as well as direct API links or other URLs. It prompts the user
+    to select a destination folder for the downloaded poster.
+
+    Args:
+        url (str): The URL of the poster to download.
+    """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
@@ -154,6 +148,16 @@ def downloadPoster(url):
 
 
 def organizeMovieFolder(folderDir):
+    """Organizes movie posters in a given folder.
+
+    This function iterates through files in a directory, matches them to movies
+    in the Plex library using fuzzy string matching, and then renames and moves
+    them into a subfolder named after the movie. This is intended to be used
+for individual movie posters.
+
+    Args:
+        folderDir (str): The directory path containing the movie poster files.
+    """
     global poster_data
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
@@ -185,6 +189,15 @@ def organizeMovieFolder(folderDir):
 
 
 def organizeShowFolder(folderDir):
+    """Organizes TV show posters in a given folder.
+
+    This function renames TV show poster files to match the expected Plex
+    naming convention (e.g., 'Season01.jpg', 'Season00.jpg' for specials).
+    It handles season posters, special season posters, and the main show poster.
+
+    Args:
+        folderDir (str): The directory path containing the TV show poster files.
+    """
     global poster_data
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
@@ -211,6 +224,12 @@ def organizeShowFolder(folderDir):
 
 
 def moviePoster():
+    """Processes individual movie posters not in a collection folder.
+
+    This function iterates through loose poster files and asks the user if they
+    want to move them into a 'Custom' subfolder for organization. This is
+    useful for preparing posters for use with Kometa or for manual review.
+    """
     global poster_data
     for poster in poster_data.posterFiles:
         organize = input(
@@ -230,6 +249,15 @@ def moviePoster():
 
 
 def findPosters(posterRootDirs):
+    """Finds and categorizes posters from a list of root directories.
+
+    This function scans the provided directories and categorizes the found items
+    into three groups: zipped poster packs, folders containing posters, and
+    individual poster files. It also renames zip files to a cleaner format.
+
+    Args:
+        posterRootDirs (list): A list of directory paths to search for posters.
+    """
     global poster_data
     for path1 in posterRootDirs:
         for path2 in os.listdir(path1):
@@ -257,6 +285,15 @@ def findPosters(posterRootDirs):
 
 
 def copyPosters(posterFolder):
+    """Copies organized posters to the corresponding media folders.
+
+    This function creates hard links from the organized poster folders to the
+    actual media folders in the Plex library. This is useful for users who
+    want to have the posters directly in their media folders for Plex to use.
+
+    Args:
+        posterFolder (str): The path to the organized poster folder.
+    """
     global poster_data
     mediaFolders = poster_data.mediaFolderNames.get(
         os.path.basename(posterFolder))
@@ -298,6 +335,18 @@ def copyPosters(posterFolder):
 import string
 
 def normalize_name(name: str) -> str:
+    """Normalizes a name for better fuzzy string matching.
+
+    This function removes the file extension, year, 'set by' text, and all
+    punctuation from a given string and converts it to lowercase. This helps
+    in comparing poster names with media folder names more accurately.
+
+    Args:
+        name (str): The name to normalize.
+
+    Returns:
+        str: The normalized name.
+    """
     name = os.path.splitext(name)[0]
     name = re.sub(r'\(\d{4}\)', '', name)  # remove (year)
     name = re.sub(r'\s+set by.*$', '', name, flags=re.IGNORECASE).strip()
@@ -305,6 +354,19 @@ def normalize_name(name: str) -> str:
     return name
 
 def findBestMediaMatch(poster_zip_name: str, media_names: list):
+    """Finds the best media match for a poster zip file.
+
+    This function uses fuzzy string matching to find the best match between a
+    poster zip file name and a list of media folder names. It normalizes both
+    names before comparing them.
+
+    Args:
+        poster_zip_name (str): The name of the poster zip file.
+        media_names (list): A list of media folder names to compare against.
+
+    Returns:
+        tuple: A tuple containing the best match and the matching score.
+    """
     bestMatch = None
     bestScore = 0
     normPoster = normalize_name(poster_zip_name)
@@ -316,9 +378,16 @@ def findBestMediaMatch(poster_zip_name: str, media_names: list):
     return bestMatch, bestScore
 
 def organizeMovieCollectionFolder(folderDir):
-    """
-    Organize posters in a collection folder by matching individual poster files
-    to movies in the media library.
+    """Organizes posters for movie collections.
+
+    This function is designed to handle folders that contain posters for multiple
+    movies, such as a collection or a set. It iterates through each poster file,
+    tries to match it to a movie in the library, and then organizes it into a
+    subfolder named after the movie. This is particularly useful for preparing
+    movie collection posters for use with Kometa.
+
+    Args:
+        folderDir (str): The directory containing the collection of posters.
     """
     global poster_data
     unmatched_files = []
@@ -379,7 +448,18 @@ def organizeMovieCollectionFolder(folderDir):
             print(f"  - {file}")
         print("These files were left in the collection folder for manual organization.")
 
-def processZipFile():
+def processZipFile(selectedLibrary):
+    """Processes zipped poster files.
+
+    This function iterates through found zip files, matches them to media in the
+    Plex library, and then extracts them. After extraction, it calls the
+    appropriate organization function based on the library type (movie or show)
+    and the quality of the match. It also handles archiving the zip file after
+    processing.
+
+    Args:
+        selectedLibrary (LibraryData): The Plex library to process posters for.
+    """
     global poster_data
     for posterZip in poster_data.posterZipFiles.keys():
         sourceZip = poster_data.posterZipFiles.get(posterZip)
@@ -443,48 +523,123 @@ def processZipFile():
             print('Skipped files\n')
 
 def syncMovieFolder(path):
+    """Synchronizes a movie folder by matching it to the media library.
+
+    This function is used to process folders that may be unlinked or incorrectly
+    named. It attempts to find a match in the Plex library and, if successful,
+    renames the folder to match the media. This is particularly useful for the
+    '--unlinked' option.
+
+    Args:
+        path (str): The path to the movie folder to sync.
+    """
     global poster_data
     if len(os.listdir(path)) > 1:
-        print(path)
+        print(f"Organizing complex folder: {path}")
         organizeMovieFolder(path)
     else:
         matchedMedia = process.extractOne(
-            path, list(poster_data.mediaFolderNames.keys()), scorer=fuzz.token_sort_ratio, processor=lambda x: os.path.basename(x), score_cutoff=70)
+            path, list(poster_data.mediaFolderNames.keys()),
+            scorer=fuzz.token_sort_ratio, processor=lambda x: os.path.basename(x),
+            score_cutoff=70)
         
-        user_in = input("Matched folder %s to movie %s [%d], proceed? (y/n/f):  " %
-                        (os.path.basename(path), matchedMedia[0], matchedMedia[1])) if matchedMedia else None
-        # Choosing option 'f' follows the force renaming logic for the movie folder/poster
-        # if opts.force or (matchedMedia and user_in in ['y', 'f']):
-        #     fileName = os.path.splitext(os.path.basename(file))[
-        #         0] if (opts.force or user_in == 'f' or collection) else matchedMedia[0]
-        #     fileExtension = os.path.splitext(file)[1]
-        #     newFolder = os.path.join(folderDir, fileName)
-        #     if os.path.isdir(newFolder):
-        #         shutil.rmtree(newFolder)
-        #     os.mkdir(newFolder)
-        #     destinationFile = os.path.join(
-        #         newFolder, ("poster%s" % (fileExtension)))
-        #     os.rename(sourceFile, destinationFile)
+        if matchedMedia:
+            user_in = input("Matched folder %s to movie %s [%d], proceed? (y/n):  " %
+                            (os.path.basename(path), matchedMedia[0], matchedMedia[1]))
+            if user_in.lower() == 'y':
+                newPath = os.path.join(os.path.dirname(path), matchedMedia[0])
+                if os.path.isdir(newPath):
+                    print(f"Error: Target directory {newPath} already exists. Skipping rename.")
+                else:
+                    os.rename(path, newPath)
+                    print(f"Renamed {os.path.basename(path)} to {matchedMedia[0]}")
+        else:
+            print(f"No match found for {os.path.basename(path)}")
 
-def check_file(dir, prefix):
-    for s in os.listdir(dir):
-        if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(dir, s)):
+
+def check_file(directory, prefix):
+    """Checks if a file with a given prefix exists in a directory.
+
+    Args:
+        directory (str): The directory to search in.
+        prefix (str): The prefix of the file to look for (without extension).
+
+    Returns:
+        bool: True if a file with the prefix exists, False otherwise.
+    """
+    for s in os.listdir(directory):
+        if os.path.splitext(s)[0] == prefix and os.path.isfile(os.path.join(directory, s)):
             return True
     return False
 
 
-def delete_file(dir, prefix, prompt: Boolean):
-    for s in os.listdir(dir):
-        filePath = os.path.join(dir, s)
+def delete_file(directory, prefix, prompt: Boolean):
+    """Deletes files in a directory with a specific prefix.
+
+    Args:
+        directory (str): The directory to delete files from.
+        prefix (str): The prefix of the files to delete (without extension).
+        prompt (bool): If True, ask for user confirmation before deleting.
+    """
+    for s in os.listdir(directory):
+        filePath = os.path.join(directory, s)
         if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
             if not prompt or input("Delete %s? (y/n): " % filePath) == 'y':
                 os.remove(filePath)
 
 
 if __name__ == '__main__':
+    """
+    Main execution block for the script.
+
+    This script is designed to organize movie and TV show posters downloaded from
+    The Poster DB (TPDb) for use with Plex and metadata managers like Kometa.
+    It can process local poster files, sort them into media-specific folders,
+    and handle zipped poster packs.
+
+    The script connects to a Plex server to get a list of media for matching,
+    and it can be configured via a config file or command-line arguments.
+    """
+    # Get config from file
+    if CONFIG:
+        if not PLEX_TOKEN:
+            PLEX_TOKEN = CONFIG.data['auth'].get('server_token')
+        if not PLEX_URL:
+            PLEX_URL = CONFIG.data['auth'].get('server_baseurl')
+
+    # Ask user for config
+    if not PLEX_TOKEN or not PLEX_URL:
+        if not PLEX_TOKEN:
+            PLEX_TOKEN = input("Please enter your Plex auth token: ")
+        if not PLEX_URL:
+            PLEX_URL = input("Please enter your Plex URL: ")
+        if input("Save config? (y/n): ") == 'y':
+            config_directory = os.path.expanduser('~/.config/plexapi')
+            os.makedirs(config_directory, exist_ok=True)
+            config_file_path = os.path.join(config_directory, 'config.ini')
+
+            if not os.path.exists(config_file_path):
+                with open(config_file_path, 'w') as configfile:
+                    configfile.write('[auth]\n')
+                    configfile.write(f'server_baseurl = {PLEX_URL}\n')
+                    configfile.write(f'server_token = {PLEX_TOKEN}\n')
+            else:
+                if update_config(config_file_path):
+                    print("Config file updated.")
+                else:
+                    print("Config file already contains data, but server_baseurl and server_token were not found. Please update it manually.")
+
+    plex = PlexServer(PLEX_URL, PLEX_TOKEN)
+    allLibraries = []
+    for library in plex.library.sections():
+        if library.type not in ['artist', 'photo'] and library.locations:
+            allLibraries.append(LibraryData(
+                library.title, library.type, library.locations))
+
     # Define arguments
     parser = argparse.ArgumentParser(
-        "Reorganize The Poster DB files to work with Plex Meta Manager", formatter_class=argparse.RawTextHelpFormatter)
+        "Reorganize The Poster DB files to work with Kometa (formerly Plex Meta Manager)",
+        formatter_class=argparse.RawTextHelpFormatter)
     libraryNames = [library.title for library in allLibraries]
     parser.add_argument('-l','--libraries', nargs='+',
                         choices=libraryNames, default=libraryNames, help='Name of the Plex libraries to process')
@@ -509,10 +664,11 @@ if __name__ == '__main__':
 
     # Process posters
     if opts.libraries:
-        for library in opts.libraries:
-            selectedLibrary = next((lib for lib in allLibraries if lib.title == library), None)
+        for library_name in opts.libraries:
+            selectedLibrary = next((lib for lib in allLibraries if lib.title == library_name), None)
             if not selectedLibrary:
-                break
+                print(f"Library '{library_name}' not found.")
+                continue
             poster_data = Posters([], [], {}, collections.defaultdict(list))
 
             ####################################
@@ -520,7 +676,6 @@ if __name__ == '__main__':
             ####################################
             if selectedLibrary.type in ['movie', 'show']:
                 # Get all media folders in the library
-                # mediaPaths["NAME OF THE MEDIA FOLDER",...]
                 for path in selectedLibrary.locations:
                     for name in os.listdir(path):
                         poster_data.mediaFolderNames[name].append(path)
@@ -556,12 +711,12 @@ if __name__ == '__main__':
                                         posterExists = True
                                 if posterExists and not any(m in os.path.basename(movie) for m in ['Collection', *poster_data.mediaFolderNames.keys()]) and 'Custom' not in movie:
                                     unlinkedFolders.add(movie)
-                            if input(f'{len(unlinkedFolders)} unlinked folders found. Start processing them? (y/n): ') == 'y':
+                            if unlinkedFolders and input(f'{len(unlinkedFolders)} unlinked folders found. Start processing them? (y/n): ') == 'y':
                                 for folder in unlinkedFolders:
                                     syncMovieFolder(folder)
                         elif opts.action == 'new':
                             moviePoster()
-                            processZipFile()
+                            processZipFile(selectedLibrary)
                         elif opts.action == 'sync':
                             for folder in poster_data.posterFolders:
                                 posterExists = any(os.path.isfile(os.path.join(folder, x)) for x in os.listdir(folder))
@@ -569,7 +724,7 @@ if __name__ == '__main__':
                                     organizeMovieFolder(folder)
                     case 'show':
                         if opts.action == 'new':
-                            processZipFile()
+                            processZipFile(selectedLibrary)
                         elif opts.action == 'sync':
                             unorganizedPosterFolders = [folder for folder in poster_data.posterFolders if not check_file(folder, "poster")]
                             for folder in unorganizedPosterFolders:

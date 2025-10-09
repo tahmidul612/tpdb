@@ -153,7 +153,7 @@ def organizeMovieFolder(folderDir):
     This function iterates through files in a directory, matches them to movies
     in the Plex library using fuzzy string matching, and then renames and moves
     them into a subfolder named after the movie. This is intended to be used
-for individual movie posters.
+    for individual movie posters.
 
     Args:
         folderDir (str): The directory path containing the movie poster files.

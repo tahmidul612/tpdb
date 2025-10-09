@@ -72,7 +72,7 @@ def main():
             print(f'\t- No duplicates found at level {depth}.')
 
 
-def subdirs(directory: str) -> List[tuple[str, int]]:
+def subdirs(directory: str) -> list[tuple[str, int]]:
     """
     Recursively finds all subdirectories and their depth.
 

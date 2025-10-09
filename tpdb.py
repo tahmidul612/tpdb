@@ -42,11 +42,11 @@ class Posters:
         mediaFolderNames (collections.defaultdict): A dictionary mapping media folder names
             to a list of their root paths.
     """
-    def __init__(self, posterFolders=[], posterFiles=[], posterZipFiles={}, mediaFolderNames=collections.defaultdict(list)):
-        self.posterFolders = posterFolders
-        self.posterFiles = posterFiles
-        self.posterZipFiles = posterZipFiles
-        self.mediaFolderNames = mediaFolderNames
+    def __init__(self, posterFolders=None, posterFiles=None, posterZipFiles=None, mediaFolderNames=None):
+        self.posterFolders = posterFolders if posterFolders is not None else []
+        self.posterFiles = posterFiles if posterFiles is not None else []
+        self.posterZipFiles = posterZipFiles if posterZipFiles is not None else {}
+        self.mediaFolderNames = mediaFolderNames if mediaFolderNames is not None else collections.defaultdict(list)
 
 
 # Global static variables

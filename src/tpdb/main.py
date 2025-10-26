@@ -64,10 +64,39 @@ class Posters:
         )
 
 
+class Options:
+    """A data class to hold CLI options.
+
+    This class is used to store command-line options that are injected
+    by the CLI module. It's defined here to satisfy type checking.
+
+    Attributes:
+        force (bool): Process movie posters without matching to media folder.
+        all (bool): Replace all poster files without prompting.
+        copy (bool): Copy posters to media folders.
+        unlinked (bool): Find and process unlinked posters.
+        action (str): Action to perform ('new' or 'sync').
+        filter (str | None): String filter for source poster folders.
+    """
+
+    def __init__(self):
+        self.force: bool = False
+        self.all: bool = False
+        self.copy: bool = False
+        self.unlinked: bool = False
+        self.action: str = "new"
+        self.filter: str | None = None
+
+
 # Global static variables
 PLEX_URL = ""
 PLEX_TOKEN = ""
 POSTER_DIR = "/data/Posters"
+
+# Global variables (initialized by CLI)
+# These are set dynamically by the CLI module before calling functions
+poster_data: Posters = Posters()  # type: ignore[reportUnboundVariable]
+opts: Options = Options()  # type: ignore[reportUnboundVariable]
 
 ################################# Start Plex Config #######################################
 

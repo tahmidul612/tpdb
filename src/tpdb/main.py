@@ -5,16 +5,17 @@ import collections
 import os
 import re
 import shutil
-import string
 import zipfile
 from xmlrpc.client import Boolean
 
 import pyrfc6266
 import requests
 import typer
+from rapidfuzz import fuzz, process, utils
 from rich.console import Console
 from rich.progress import Progress
-from thefuzz import fuzz, process
+
+from tpdb.matcher import find_best_media_match
 
 # Initialize Rich console
 console = Console()
@@ -28,13 +29,13 @@ def prompt_match_confirmation(
     media_type: str = "item",
 ) -> bool:
     """Display a nicely formatted match confirmation prompt.
-    
+
     Args:
         source_name: The source file/folder name
         match_name: The matched media name
         match_score: The fuzzy match score (0-100)
         media_type: Type of media (movie, show, folder, etc.)
-    
+
     Returns:
         bool: True if user confirms, False otherwise
     """
@@ -45,41 +46,47 @@ def prompt_match_confirmation(
         score_color = "yellow"
     else:
         score_color = "red"
-    
+
     console.print()
     console.print(f"[bold cyan]Match Found for {media_type.title()}[/bold cyan]")
     console.print(f"  Source:  [dim]{source_name}[/dim]")
     console.print(f"  Match:   [bold]{match_name}[/bold]")
     console.print(f"  Score:   [{score_color}]{match_score}/100[/{score_color}]")
     console.print()
-    
+
     return typer.confirm("Proceed with this match?", default=True)
 
 
-def prompt_collection_organization(source_name: str, best_match: str | None, score: int | float) -> bool:
+def prompt_collection_organization(
+    source_name: str, best_match: str | None, score: int | float
+) -> bool:
     """Display prompt for organizing collection/set folders.
-    
+
     Args:
         source_name: The collection/set name
         best_match: Best match found (if any)
         score: Match score
-    
+
     Returns:
         bool: True if user wants to proceed
     """
     console.print()
     console.print("[bold cyan]Collection Detected[/bold cyan]")
     console.print(f"  File:    [dim]{source_name}[/dim]")
-    
+
     if best_match:
         console.print(f"  Match:   [yellow]{best_match}[/yellow] (low score: {score})")
         console.print()
-        console.print("[dim]This appears to be a collection/set with multiple movies.[/dim]")
+        console.print(
+            "[dim]This appears to be a collection/set with multiple movies.[/dim]"
+        )
         return typer.confirm("Unzip and organize movies individually?", default=True)
     else:
         console.print("  Match:   [red]No match found[/red]")
         console.print()
-        console.print("[dim]This appears to be a collection/set with multiple movies.[/dim]")
+        console.print(
+            "[dim]This appears to be a collection/set with multiple movies.[/dim]"
+        )
         return typer.confirm("Unzip and organize movies individually?", default=True)
 
 
@@ -89,12 +96,12 @@ def prompt_poster_organization(
     match_score: int | float,
 ) -> str:
     """Display prompt for organizing individual poster files with match/force/skip options.
-    
+
     Args:
         file_name: The poster file name
         match_name: The matched movie name
         match_score: The fuzzy match score (0-100)
-    
+
     Returns:
         str: 'y' to use match, 'f' to force rename, 'n' to skip
     """
@@ -105,7 +112,7 @@ def prompt_poster_organization(
         score_color = "yellow"
     else:
         score_color = "red"
-    
+
     console.print()
     console.print("[bold cyan]Poster Match[/bold cyan]")
     console.print(f"  File:    [dim]{file_name}[/dim]")
@@ -113,7 +120,7 @@ def prompt_poster_organization(
     console.print(f"  Score:   [{score_color}]{match_score:.0f}/100[/{score_color}]")
     console.print()
     console.print("[dim]Options: (y) use match, (f) force rename, (n) skip[/dim]")
-    
+
     return typer.prompt("Choose", default="y").lower()
 
 
@@ -320,6 +327,7 @@ def organize_movie_folder(folder_dir):
                     file,
                     poster_data.media_folder_names.keys(),
                     scorer=fuzz.token_sort_ratio,
+                    processor=utils.default_process,
                 )
             else:
                 collection = True
@@ -510,51 +518,6 @@ def copy_posters(poster_folder):
                     os.link(orig_file, new_file)
 
 
-def normalize_name(name: str) -> str:
-    """Normalizes a name for better fuzzy string matching.
-
-    This function removes the file extension, year, 'set by' text, and all
-    punctuation from a given string and converts it to lowercase. This helps
-    in comparing poster names with media folder names more accurately.
-
-    Args:
-        name (str): The name to normalize.
-
-    Returns:
-        str: The normalized name.
-    """
-    name = os.path.splitext(name)[0]
-    name = re.sub(r"\(\d{4}\)", "", name)  # remove (year)
-    name = re.sub(r"\s+set by.*$", "", name, flags=re.IGNORECASE).strip()
-    name = name.translate(str.maketrans("", "", string.punctuation)).lower()
-    return name
-
-
-def find_best_media_match(poster_zip_name: str, media_names: list):
-    """Finds the best media match for a poster zip file.
-
-    This function uses fuzzy string matching to find the best match between a
-    poster zip file name and a list of media folder names. It normalizes both
-    names before comparing them.
-
-    Args:
-        poster_zip_name (str): The name of the poster zip file.
-        media_names (list): A list of media folder names to compare against.
-
-    Returns:
-        tuple: A tuple containing the best match and the matching score.
-    """
-    best_match = None
-    best_score = 0
-    norm_poster = normalize_name(poster_zip_name)
-    for candidate in media_names:
-        norm_candidate = normalize_name(candidate)
-        score = fuzz.partial_token_sort_ratio(norm_poster, norm_candidate)
-        if score > best_score:
-            best_match, best_score = candidate, score
-    return best_match, best_score
-
-
 def organize_movie_collection_folder(folder_dir):
     """Organizes posters for movie collections.
 
@@ -579,6 +542,7 @@ def organize_movie_collection_folder(folder_dir):
                 poster_data.media_folder_names.keys(),
                 scorer=fuzz.token_sort_ratio,
                 score_cutoff=60,
+                processor=utils.default_process,
             )
 
             if matched_media:

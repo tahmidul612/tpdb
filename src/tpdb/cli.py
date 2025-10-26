@@ -94,7 +94,7 @@ def main_callback(
     # Import here to avoid circular imports and to delay loading
     import collections
     import os
-    from thefuzz import fuzz, process
+    from rapidfuzz import fuzz, process, utils
     from plexapi.server import CONFIG, PlexServer
     from tpdb.main import (
         POSTER_DIR,
@@ -213,6 +213,7 @@ def main_callback(
                         poster_data.poster_folders,
                         scorer=fuzz.token_set_ratio,
                         score_cutoff=50,
+                        processor=utils.default_process,
                     )
                 ]
                 if 100 in [s[1] for s in folder_and_score]:

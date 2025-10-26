@@ -11,8 +11,8 @@ requires-python = ">=3.10"
 dependencies = [
     "plexapi>=4.17.1",
     "pyrfc6266>=1.0.2",
+    "rapidfuzz>=3.0.0",
     "requests>=2.32.5",
-    "thefuzz>=0.22.1",
     "typer[all]>=0.15.1",
     "rich>=13.9.4",
 ]

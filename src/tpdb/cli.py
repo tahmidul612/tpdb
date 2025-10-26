@@ -15,7 +15,7 @@ console = Console()
 # Create the main Typer app
 app = typer.Typer(
     name="tpdb",
-    help="Reorganize The Poster DB files to work with Kometa (formerly Plex Meta Manager)",
+    help="Reorganize ThePosterDB files to work with Kometa (formerly Plex Meta Manager)",
     no_args_is_help=False,
 )
 
@@ -24,9 +24,9 @@ app = typer.Typer(
 def download(
     url: str = typer.Argument(..., help="URL of the poster to download"),
 ):
-    """Download a poster from The Poster DB."""
+    """Download a poster from ThePosterDB."""
     from tpdb.main import downloadPoster
-    
+
     console.print(f"[bold cyan]Downloading poster from:[/bold cyan] {url}")
     downloadPoster(url)
     console.print("[bold green]Download complete![/bold green]")

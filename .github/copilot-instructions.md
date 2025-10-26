@@ -2,7 +2,7 @@
 
 ## Project Architecture
 
-This is a Python utility for downloading, organizing, and syncing movie/TV show posters from The Poster DB with Plex media libraries. The codebase follows a monolithic script pattern with two main components:
+This is a Python utility for downloading, organizing, and syncing movie/TV show posters from ThePosterDB with Plex media libraries. The codebase follows a monolithic script pattern with two main components:
 
 - **`tpdb.py`**: Main application (~739 lines) handling all poster processing workflows
 - **`duplicates.py`**: Standalone utility for detecting duplicate poster folders using fuzzy matching
@@ -18,7 +18,7 @@ This is a Python utility for downloading, organizing, and syncing movie/TV show 
 
 - `normalize_name()`: Name normalization for improved media matching (removes years, punctuation, "set by" text)
 - `findBestMediaMatch()`: Fuzzy matching algorithm for associating poster files with media
-- `downloadPoster()`: Downloads posters from The Poster DB URLs with progress bars
+- `downloadPoster()`: Downloads posters from ThePosterDB URLs with progress bars
 - `processZipFile()`: Extracts and organizes poster zip file collections
 - `organizeMovieFolder()` / `organizeShowFolder()`: Media type-specific organization logic
 - `copyPosters()`: Creates hard links from poster folders to Plex media directories
@@ -162,7 +162,7 @@ python tpdb.py --download "https://theposterdb.com/set/12345"
 Key workflow commands:
 
 - `python tpdb.py` - Run in interactive mode (prompts for user decisions)
-- `python tpdb.py --download <URL>` - Download from The Poster DB
+- `python tpdb.py --download <URL>` - Download from ThePosterDB
 - `python tpdb.py --action new` - Process new posters/zips (default)
 - `python tpdb.py --action sync` - Organize existing poster folders
 - `python tpdb.py --copy` - Create hard links to media folders

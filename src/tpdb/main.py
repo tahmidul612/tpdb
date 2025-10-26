@@ -11,6 +11,7 @@ from xmlrpc.client import Boolean
 
 import pyrfc6266
 import requests
+import typer
 from rich.console import Console
 from rich.progress import Progress
 from thefuzz import fuzz, process
@@ -229,14 +230,13 @@ def organizeMovieFolder(folderDir):
             if opts.force:
                 user_in = "f"
             else:
-                user_in = (
-                    input(
-                        "Matched poster file %s to movie %s, proceed? (y/n/f):  "
-                        % (file, matchedMedia[0])
-                    )
-                    if matchedMedia
-                    else None
-                )
+                if matchedMedia:
+                    user_in = typer.prompt(
+                        f"Matched poster file {file} to movie {matchedMedia[0]}, proceed? (y/n/f)",
+                        default="y",
+                    ).lower()
+                else:
+                    user_in = None
             # Choosing option 'f' follows the force renaming logic for the movie folder/poster
             if opts.force or collection or (matchedMedia and user_in in ["y", "f"]):
                 fileName = (
@@ -302,11 +302,9 @@ def moviePoster():
     """
     global poster_data
     for poster in poster_data.posterFiles:
-        organize = input(
-            "Move poster file %s to Custom posters folder? (y/n):  "
-            % os.path.basename(poster)
-        )
-        if organize == "y":
+        if typer.confirm(
+            f"Move poster file {os.path.basename(poster)} to Custom posters folder?"
+        ):
             if "Custom" not in poster:
                 sourceDir = os.path.dirname(poster)
                 destinationDir = os.path.join(sourceDir, "Custom")
@@ -317,7 +315,7 @@ def moviePoster():
             shutil.move(poster, destinationDir)
             organizeMovieFolder(destinationDir)
         else:
-            print("Skipped files\n")
+            console.print("[yellow]Skipped files[/yellow]")
 
 
 def findPosters(posterRootDirs):
@@ -371,13 +369,8 @@ def copyPosters(posterFolder):
     if mediaFolders:
         mediaName = os.path.basename(posterFolder)
         posterFileNames = os.listdir(posterFolder)
-        if (
-            opts.all
-            or input(
-                "Hardlink posters from [%s] to [%s]? (y/n): "
-                % (posterFolder, mediaFolders)
-            )
-            == "y"
+        if opts.all or typer.confirm(
+            f"Hardlink posters from [{posterFolder}] to [{mediaFolders}]?"
         ):
             replaceFiles = False
             for poster in posterFileNames:
@@ -402,13 +395,11 @@ def copyPosters(posterFolder):
                         ):
                             continue
                         else:
-                            prompt = "Replace existing files? (y/n): "
                             if opts.all:
-                                prompt = (
-                                    "Replace all poster files in %s? (y/n): "
-                                    % os.path.dirname(new_file)
-                                )
-                            if replaceFiles or input(prompt) == "y":
+                                prompt_msg = f"Replace all poster files in {os.path.dirname(new_file)}?"
+                            else:
+                                prompt_msg = "Replace existing files?"
+                            if replaceFiles or typer.confirm(prompt_msg):
                                 replaceFiles = True
                                 delete_file(
                                     os.path.dirname(new_file),
@@ -416,11 +407,11 @@ def copyPosters(posterFolder):
                                     False,
                                 )
                             else:
-                                print("Skipping folder %s" % os.path.dirname(new_file))
+                                console.print(
+                                    f"[yellow]Skipping folder {os.path.dirname(new_file)}[/yellow]"
+                                )
                                 continue
                     os.link(orig_file, new_file)
-
-
 
 
 def normalize_name(name: str) -> str:
@@ -495,10 +486,10 @@ def organizeMovieCollectionFolder(folderDir):
             )
 
             if matchedMedia:
-                user_in = input(
-                    "Matched poster file %s to movie %s [score: %d], proceed? (y/n/f):  "
-                    % (file, matchedMedia[0], matchedMedia[1])
-                )
+                user_in = typer.prompt(
+                    f"Matched poster file {file} to movie {matchedMedia[0]} [score: {matchedMedia[1]}], proceed? (y/n/f)",
+                    default="y",
+                ).lower()
 
                 if user_in in ["y", "f"]:
                     # Determine folder name: use match name for 'y', original file name for 'f'
@@ -518,16 +509,17 @@ def organizeMovieCollectionFolder(folderDir):
                         movieFolder, ("poster%s" % fileExtension)
                     )
                     os.rename(sourceFile, destinationFile)
-                    print(f"Organized {file} into {folderName} folder")
+                    console.print(
+                        f"[green]Organized {file} into {folderName} folder[/green]"
+                    )
                 else:
-                    print(f"Skipped {file}")
+                    console.print(f"[yellow]Skipped {file}[/yellow]")
                     continue
             else:
                 # No match found - ask if user wants to force rename
-                user_in = input(
-                    "No match found for poster file %s. Force rename? (y/n):  " % file
-                )
-                if user_in == "y":
+                if typer.confirm(
+                    f"No match found for poster file {file}. Force rename?"
+                ):
                     folderName = os.path.splitext(file)[0]
 
                     # Create a subfolder within the collection folder
@@ -541,15 +533,19 @@ def organizeMovieCollectionFolder(folderDir):
                         movieFolder, ("poster%s" % fileExtension)
                     )
                     os.rename(sourceFile, destinationFile)
-                    print(f"Organized {file} into {folderName} folder")
+                    console.print(
+                        f"[green]Organized {file} into {folderName} folder[/green]"
+                    )
                 else:
                     unmatched_files.append(file)
 
     if unmatched_files:
-        print(f"\nUnmatched files in {folderDir}:")
+        console.print(f"\n[yellow]Unmatched files in {folderDir}:[/yellow]")
         for file in unmatched_files:
-            print(f"  - {file}")
-        print("These files were left in the collection folder for manual organization.")
+            console.print(f"  - {file}")
+        console.print(
+            "[yellow]These files were left in the collection folder for manual organization.[/yellow]"
+        )
 
 
 def processZipFile(selectedLibrary):
@@ -577,12 +573,15 @@ def processZipFile(selectedLibrary):
             )
             if bestMatch:
                 destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
-                unzip = input(
-                    "Matched zip file %s to show %s [score: %d], proceed? (y/n):  "
-                    % (os.path.basename(sourceZip), bestMatch, bestScore)
+                unzip = (
+                    "y"
+                    if typer.confirm(
+                        f"Matched zip file {os.path.basename(sourceZip)} to show {bestMatch} [score: {bestScore}], proceed?"
+                    )
+                    else "n"
                 )
             else:
-                print("No matching media found\n")
+                console.print("[yellow]No matching media found[/yellow]")
                 continue
         elif selectedLibrary and selectedLibrary.type == "movie":
             bestMatch, bestScore = findBestMediaMatch(
@@ -592,9 +591,12 @@ def processZipFile(selectedLibrary):
                 bestMatch and bestScore > 70
             ):  # Only use direct match if score is high enough
                 destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
-                unzip = input(
-                    "Matched zip file %s to movie %s [score: %d], proceed? (y/n):  "
-                    % (os.path.basename(sourceZip), bestMatch, bestScore)
+                unzip = (
+                    "y"
+                    if typer.confirm(
+                        f"Matched zip file {os.path.basename(sourceZip)} to movie {bestMatch} [score: {bestScore}], proceed?"
+                    )
+                    else "n"
                 )
             else:
                 # For movie sets/collections, unzip with current name and organize individually
@@ -603,14 +605,20 @@ def processZipFile(selectedLibrary):
                     os.path.splitext(os.path.basename(sourceZip))[0],
                 )
                 if bestMatch:
-                    unzip = input(
-                        "Low match score (%d) for %s to %s. Unzip as collection and organize individually? (y/n):  "
-                        % (bestScore, os.path.basename(sourceZip), bestMatch)
+                    unzip = (
+                        "y"
+                        if typer.confirm(
+                            f"Low match score ({bestScore}) for {os.path.basename(sourceZip)} to {bestMatch}. Unzip as collection and organize individually?"
+                        )
+                        else "n"
                     )
                 else:
-                    unzip = input(
-                        "No direct match found for %s. Unzip as collection and organize individually? (y/n):  "
-                        % os.path.basename(sourceZip)
+                    unzip = (
+                        "y"
+                        if typer.confirm(
+                            f"No direct match found for {os.path.basename(sourceZip)}. Unzip as collection and organize individually?"
+                        )
+                        else "n"
                     )
         if unzip == "y":
             with zipfile.ZipFile(sourceZip, "r") as zip_ref:
@@ -619,7 +627,9 @@ def processZipFile(selectedLibrary):
                         shutil.rmtree(destinationDir)
                     zip_ref.extractall(destinationDir)
                 except Exception as e:
-                    print(f"Something went wrong extracting the zip: {e}")
+                    console.print(
+                        f"[bold red]Something went wrong extracting the zip: {e}[/bold red]"
+                    )
                 else:
                     if selectedLibrary and selectedLibrary.type == "show":
                         organizeShowFolder(destinationDir)
@@ -633,12 +643,11 @@ def processZipFile(selectedLibrary):
                             organizeMovieFolder(destinationDir)
                         else:
                             # Collection/set - organize individual movies within the collection
-                            print(
-                                f"\nProcessing collection folder: {os.path.basename(destinationDir)}"
+                            console.print(
+                                f"\n[cyan]Processing collection folder: {os.path.basename(destinationDir)}[/cyan]"
                             )
                             organizeMovieCollectionFolder(destinationDir)
-                    moveZip = input("Move zip file to archive folder? (y/n):  ")
-                    if moveZip == "y":
+                    if typer.confirm("Move zip file to archive folder?"):
                         if os.path.isfile(
                             os.path.join(
                                 POSTER_DIR, "Archives", os.path.basename(sourceZip)
@@ -651,7 +660,7 @@ def processZipFile(selectedLibrary):
                             )
                         shutil.move(sourceZip, os.path.join(POSTER_DIR, "Archives"))
         else:
-            print("Skipped files\n")
+            console.print("[yellow]Skipped files[/yellow]")
 
 
 def syncMovieFolder(path):
@@ -667,7 +676,7 @@ def syncMovieFolder(path):
     """
     global poster_data
     if len(os.listdir(path)) > 1:
-        print(f"Organizing complex folder: {path}")
+        console.print(f"[cyan]Organizing complex folder: {path}[/cyan]")
         organizeMovieFolder(path)
     else:
         matchedMedia = process.extractOne(
@@ -679,21 +688,23 @@ def syncMovieFolder(path):
         )
 
         if matchedMedia:
-            user_in = input(
-                "Matched folder %s to movie %s [%d], proceed? (y/n):  "
-                % (os.path.basename(path), matchedMedia[0], matchedMedia[1])
-            )
-            if user_in.lower() == "y":
+            if typer.confirm(
+                f"Matched folder {os.path.basename(path)} to movie {matchedMedia[0]} [{matchedMedia[1]}], proceed?"
+            ):
                 newPath = os.path.join(os.path.dirname(path), matchedMedia[0])
                 if os.path.isdir(newPath):
-                    print(
-                        f"Error: Target directory {newPath} already exists. Skipping rename."
+                    console.print(
+                        f"[bold red]Error: Target directory {newPath} already exists. Skipping rename.[/bold red]"
                     )
                 else:
                     os.rename(path, newPath)
-                    print(f"Renamed {os.path.basename(path)} to {matchedMedia[0]}")
+                    console.print(
+                        f"[green]Renamed {os.path.basename(path)} to {matchedMedia[0]}[/green]"
+                    )
         else:
-            print(f"No match found for {os.path.basename(path)}")
+            console.print(
+                f"[yellow]No match found for {os.path.basename(path)}[/yellow]"
+            )
 
 
 def check_file(directory, prefix):
@@ -725,5 +736,5 @@ def delete_file(directory, prefix, prompt: Boolean):
     for s in os.listdir(directory):
         filePath = os.path.join(directory, s)
         if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
-            if not prompt or input("Delete %s? (y/n): " % filePath) == "y":
+            if not prompt or typer.confirm(f"Delete {filePath}?"):
                 os.remove(filePath)

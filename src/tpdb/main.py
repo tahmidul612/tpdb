@@ -138,7 +138,7 @@ def downloadPoster(url):
         url (str): The URL of the poster to download.
     """
     from rich.prompt import Prompt
-    
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
@@ -727,5 +727,3 @@ def delete_file(directory, prefix, prompt: Boolean):
         if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
             if not prompt or input("Delete %s? (y/n): " % filePath) == "y":
                 os.remove(filePath)
-
-

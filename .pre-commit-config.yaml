@@ -1,19 +1,30 @@
 default_stages:
   - pre-commit
 repos:
+  # Handle dependency management with proper sequencing
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.0
     hooks:
       - id: uv-lock
+        # Only run when pyproject.toml changes
+        files: ^pyproject\.toml$
       - id: uv-export
+        # Export requirements.txt when dependencies change
+        files: ^(pyproject\.toml|uv\.lock)$
+        args: ["--output-file", "requirements.txt"]
+  # Then run other quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        # Exclude generated files that might have trailing whitespace by design
+        exclude: ^(uv\.lock|requirements\.txt)$
       - id: check-illegal-windows-names
       - args:
           - --fix=lf
         id: mixed-line-ending
+        # Exclude binary or generated files
+        exclude: ^(uv\.lock)$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.0
     hooks:
@@ -43,4 +54,5 @@ repos:
     hooks:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline', '--only-verified']
-        exclude: uv.lock,requirements.txt
+        # Exclude generated files that may contain false positives
+        exclude: ^(uv\.lock|requirements\.txt)$

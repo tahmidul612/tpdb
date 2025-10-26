@@ -447,7 +447,7 @@ rapidfuzz==3.14.1 \
     --hash=sha256:fe2651258c1f1afa9b66f44bf82f639d5f83034f9804877a1bbbae2120539ad1 \
     --hash=sha256:fe87d94602624f8f25fff9a0a7b47f33756c4d9fc32b6d3308bb142aa483b8a4 \
     --hash=sha256:fedd5097a44808dddf341466866e5c57a18a19a336565b4ff50aa8f09eb528f6
-    # via thefuzz
+    # via tpdb
 requests==2.32.5 \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
@@ -489,10 +489,6 @@ termcolor==3.2.0 \
     --hash=sha256:610e6456feec42c4bcd28934a8c87a06c3fa28b01561d46aa09a9881b8622c58 \
     --hash=sha256:a10343879eba4da819353c55cb8049b0933890c2ebf9ad5d3ecd2bb32ea96ea6
     # via commitizen
-thefuzz==0.22.1 \
-    --hash=sha256:59729b33556850b90e1093c4cf9e618af6f2e4c985df193fdf3c5b5cf02ca481 \
-    --hash=sha256:7138039a7ecf540da323792d8592ef9902b1d79eb78c147d4f20664de79f3680
-    # via tpdb
 tomli==2.3.0 ; python_full_version < '3.11' \
     --hash=sha256:00b5f5d95bbfc7d12f91ad8c593a1659b6387b43f054104cda404be6bda62456 \
     --hash=sha256:0a154a9ae14bfcf5d8917a59b51ffd5a3ac1fd149b71b47a3a104ca4edcfa845 \

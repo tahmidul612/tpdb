@@ -2,7 +2,7 @@
 import os
 from os.path import basename
 from typing import List
-from thefuzz import fuzz, process
+from rapidfuzz import fuzz, process, utils
 import argparse
 import logging
 from rich.console import Console
@@ -10,8 +10,8 @@ from rich.console import Console
 # Initialize Rich console
 console = Console()
 
-# Suppress empty string warnings from thefuzz
-logging.getLogger("thefuzz").setLevel(logging.ERROR)
+# Suppress empty string warnings from rapidfuzz
+logging.getLogger("rapidfuzz").setLevel(logging.ERROR)
 
 # List of OS/garbage directories to ignore
 IGNORE_DIR = ["__MACOSX"]
@@ -69,6 +69,7 @@ def main():
                     [basename(x) for x in match_list],
                     scorer=fuzz.token_set_ratio,
                     score_cutoff=74,
+                    processor=utils.default_process,
                 )
             except Exception:
                 continue

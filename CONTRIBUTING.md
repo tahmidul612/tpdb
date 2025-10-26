@@ -19,10 +19,10 @@ Before you begin, ensure you have the following tools installed:
 
 ### Required Tools
 
-1. **Python 3.14 or higher** (as specified in pyproject.toml)
+1. **Python 3.10 or higher** (as specified in pyproject.toml)
 
    - **Windows**: Download from [python.org](https://www.python.org/downloads/)
-   - **macOS**: Use Homebrew: `brew install python@3.14` or download from [python.org](https://www.python.org/downloads/)
+   - **macOS**: Use Homebrew: `brew install python@3.10` or download from [python.org](https://www.python.org/downloads/)
    - **Linux**: Usually pre-installed. If not: `sudo apt install python3 python3-pip` (Debian/Ubuntu)
 
 1. **Git**
@@ -53,7 +53,7 @@ cd tpdb
 uv sync --group dev
 ```
 
-This installs all runtime dependencies (PlexAPI, thefuzz, requests, etc.) and development tools (commitizen, ruff, pre-commit).
+This installs all runtime dependencies (PlexAPI, thefuzz, requests, typer, rich, etc.) and development tools (commitizen, ruff, pre-commit, pytest).
 
 ### 3. Set Up Pre-commit Hooks
 
@@ -95,11 +95,14 @@ The pre-commit hooks will:
    # Run tests
    pytest
 
-   # Test the main script
-   python tpdb.py --help
+   # Test the main CLI
+   tpdb --help
 
-   # Test duplicates utility
-   python duplicates.py --help
+   # Test download command
+   tpdb download "https://theposterdb.com/set/12345"
+
+   # Test find-dupes command
+   tpdb find-dupes /path/to/posters
    ```
 
 1. **Check code quality**:
@@ -280,17 +283,44 @@ When contributing new features, please add appropriate tests.
 
 ### Understanding the Codebase
 
-- **`tpdb.py`**: Main application (~739 lines) with monolithic structure
-- **`duplicates.py`**: Standalone utility for finding duplicate posters
-- **Global state**: The application uses global variables extensively
+The project has been refactored to use a **modern src layout**:
+
+- **`src/tpdb/cli.py`**: Typer-based command-line interface (~290 lines)
+
+  - Entry point for the `tpdb` command
+  - Handles command parsing and option processing
+  - Injects configuration into main module
+
+- **`src/tpdb/main.py`**: Core poster processing logic (~827 lines)
+
+  - All business logic and file operations
+  - Helper functions for formatted user prompts
+  - Uses snake_case naming convention
+
+- **`src/tpdb/dupes.py`**: Duplicate detection utility
+
+  - Standalone tool for finding duplicate poster folders
+  - Uses rich for formatted output
+
+- **`scripts/`**: Development utilities
+
+  - `analyze_naming.py`: Detects camelCase naming
+  - `apply_snake_case.py`: Automated naming conversions
+
+- **Global state**: The application uses global variables injected by the CLI module
+
 - **Fuzzy matching**: Core feature using `thefuzz` library with specific thresholds
+
+- **User interaction**: Uses typer for prompts and rich for formatted console output
 
 ### Important Patterns
 
 - **Name normalization**: The `normalize_name()` function is critical for matching
-- **Interactive prompts**: Heavy use of `input()` for user decisions
+- **Interactive prompts**: Uses typer for user input, rich for formatted output
+- **Helper functions**: `prompt_match_confirmation()`, `prompt_collection_organization()`, `prompt_poster_organization()` provide consistent UX
 - **File organization**: Specific naming conventions for TV shows vs movies
 - **Threshold values**: 70%+ similarity for library matching, 74+ for duplicates
+- **Console output**: Uses rich markup for color-coded, formatted messages
 
 ### Testing Your Changes
 
@@ -298,15 +328,45 @@ When working on poster organization features:
 
 ```bash
 # Test with different library types
-python tpdb.py -l Movies --action new
-python tpdb.py -l "TV Shows" --action sync
+tpdb -l Movies --action new
+tpdb -l "TV Shows" --action sync
 
 # Test duplicate detection
-python duplicates.py /path/to/test/posters
+tpdb find-dupes /path/to/test/posters
 
 # Test download functionality
-python tpdb.py --download "https://theposterdb.com/set/12345"
+tpdb download "https://theposterdb.com/set/12345"
+
+# Or use the -d flag with main command
+tpdb -d "https://theposterdb.com/set/12345" -l Movies
 ```
+
+### Code Quality Standards
+
+The refactored codebase follows Python best practices:
+
+- **Naming**: Functions and variables use snake_case, classes use PascalCase
+- **Type hints**: Used throughout for better IDE support and type checking
+- **Docstrings**: Google-style docstrings with Args/Returns sections
+- **Console output**: Rich markup for colored, formatted messages
+- **Error handling**: Graceful degradation with informative user prompts
+
+### Development Scripts
+
+Use the scripts in `scripts/` directory for code maintenance:
+
+```bash
+# Analyze naming conventions
+python scripts/analyze_naming.py
+
+# Preview naming conversions (dry-run)
+python scripts/apply_snake_case.py --dry-run
+
+# Apply conversions interactively
+python scripts/apply_snake_case.py --interactive
+```
+
+See `scripts/README.md` for detailed documentation on these utilities.
 
 ## Getting Help
 

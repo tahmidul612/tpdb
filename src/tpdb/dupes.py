@@ -5,6 +5,10 @@ from typing import List
 from thefuzz import fuzz, process
 import argparse
 import logging
+from rich.console import Console
+
+# Initialize Rich console
+console = Console()
 
 # Suppress empty string warnings from thefuzz
 logging.getLogger("thefuzz").setLevel(logging.ERROR)
@@ -35,13 +39,17 @@ def main():
 
     dir_list = subdirs(opts.dir)
     if not dir_list or len(dir_list) < 2:
-        print(f"There must be >=2 subdirectories in {opts.dir} to find duplicates.")
+        console.print(
+            f"[bold red]There must be >=2 subdirectories in {opts.dir} to find duplicates.[/bold red]"
+        )
         exit(1)
 
     max_depth = max(dir_list, key=lambda x: x[1])[1]
 
     for depth in range(0, max_depth + 1):
-        print(f"Checking for duplicates at level {depth}...")
+        console.print(
+            f"[bold cyan]Checking for duplicates at level {depth}...[/bold cyan]"
+        )
         # Get all directories at the current depth
         current_level_dirs = [d[0] for d in dir_list if d[1] == depth]
 
@@ -72,15 +80,17 @@ def main():
                 )
                 if original_match_path:
                     out = (d, original_match_path, result[1])
-                    print(
-                        f"\t- Potential duplicate: {out[0]}  <-->  {out[1]} (Score: {out[2]})"
+                    console.print(
+                        f"\t- [bold yellow]Potential duplicate:[/bold yellow] {out[0]}  <-->  {out[1]} (Score: {out[2]})"
                     )
                     found_duplicates = True
 
             match_list.append(d)  # Add it back for the next iteration
 
         if not found_duplicates:
-            print(f"\t- No duplicates found at level {depth}.")
+            console.print(
+                f"\t- [bold green]No duplicates found at level {depth}.[/bold green]"
+            )
 
 
 def subdirs(directory: str) -> List[tuple[str, int]]:
@@ -96,7 +106,9 @@ def subdirs(directory: str) -> List[tuple[str, int]]:
     """
     dir_list = []
     if not os.path.isdir(directory):
-        print(f"Error: Directory {directory} does not exist.")
+        console.print(
+            f"[bold red]Error: Directory {directory} does not exist.[/bold red]"
+        )
         exit(1)
 
     for d in os.walk(directory):

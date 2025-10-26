@@ -1,8 +1,4 @@
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from tpdb import normalize_name
+from tpdb.main import normalize_name
 
 
 def test_normalize_name():

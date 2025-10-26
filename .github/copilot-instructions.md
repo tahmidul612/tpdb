@@ -2,34 +2,87 @@
 
 ## Project Architecture
 
-This is a Python utility for downloading, organizing, and syncing movie/TV show posters from The Poster DB with Plex media libraries. The codebase follows a monolithic script pattern with two main components:
+This is a Python utility for downloading, organizing, and syncing movie/TV show posters from ThePosterDB with Plex media libraries. The project has been refactored from monolithic scripts to a modern **src layout** with a clean separation of concerns:
 
-- **`tpdb.py`**: Main application (~739 lines) handling all poster processing workflows
-- **`duplicates.py`**: Standalone utility for detecting duplicate poster folders using fuzzy matching
+### Package Structure
+
+```
+tpdb/
+├── src/tpdb/           # Main package (installable)
+│   ├── __init__.py     # Package initialization
+│   ├── cli.py          # Command-line interface (typer-based)
+│   ├── main.py         # Core business logic (~827 lines)
+│   └── dupes.py        # Duplicate detection utility
+├── scripts/            # Development utilities
+│   ├── analyze_naming.py   # Detects camelCase names
+│   └── apply_snake_case.py # Applies snake_case conversions
+└── tests/              # Test suite
+    └── test_main.py    # Tests for core functionality
+```
+
+### Key Components
+
+- **`src/tpdb/cli.py`**: Typer-based CLI entry point (~290 lines)
+
+  - Main command callback handles library processing
+  - Subcommands: `download`, `find-dupes`
+  - Injects global `opts` and `poster_data` into main module
+
+- **`src/tpdb/main.py`**: Core poster processing logic (~827 lines)
+
+  - All business logic and file operations
+  - Helper functions for user prompts (rich formatting)
+  - snake_case naming convention (converted from camelCase)
+
+- **`src/tpdb/dupes.py`**: Standalone duplicate detection
+
+  - Fuzzy matching for finding duplicate poster folders
+  - Uses rich for formatted output
 
 ## Core Data Structures
 
 ### Key Classes
 
-- `LibraryData`: Stores Plex library metadata (title, type, locations)
-- `Posters`: Container for poster organization data with collections for folders, files, zip files, and media mappings
+- **`LibraryData`**: Stores Plex library metadata (title, type, locations)
+- **`Posters`**: Container for poster organization data with collections for folders, files, zip files, and media mappings
+- **`Options`**: Configuration object holding CLI options (force, all, copy, unlinked, action, filter)
 
-### Key Functions
+### Key Functions (All snake_case)
 
 - `normalize_name()`: Name normalization for improved media matching (removes years, punctuation, "set by" text)
-- `findBestMediaMatch()`: Fuzzy matching algorithm for associating poster files with media
-- `downloadPoster()`: Downloads posters from The Poster DB URLs with progress bars
-- `processZipFile()`: Extracts and organizes poster zip file collections
-- `organizeMovieFolder()` / `organizeShowFolder()`: Media type-specific organization logic
-- `copyPosters()`: Creates hard links from poster folders to Plex media directories
+- `find_best_media_match()`: Fuzzy matching algorithm for associating poster files with media
+- `download_poster()`: Downloads posters from ThePosterDB URLs with progress bars
+- `process_zip_file()`: Extracts and organizes poster zip file collections
+- `organize_movie_folder()` / `organize_show_folder()`: Media type-specific organization logic
+- `copy_posters()`: Creates hard links from poster folders to Plex media directories
+- `sync_movie_folder()`: Syncs existing movie poster folders
+- `movie_poster()`: Processes individual movie posters
+- `find_posters()`: Discovers poster files and folders
+
+### Helper Functions for User Interaction
+
+- `prompt_match_confirmation()`: Formatted prompt for match confirmation with score display
+- `prompt_collection_organization()`: Prompt for organizing collection/set folders
+- `prompt_poster_organization()`: Prompt with match/force/skip options for individual posters
+
+These helpers use **rich markup** for colored, formatted console output.
 
 ### Global State Pattern
 
-The application uses global variables extensively:
+The application uses global variables injected by the CLI:
 
+- `opts`: Global `Options` instance with CLI flags (force, all, copy, unlinked, action, filter)
 - `poster_data`: Global `Posters` instance shared across functions
 - `POSTER_DIR`: Default poster directory (`/data/Posters`)
-- `PLEX_URL`/`PLEX_TOKEN`: Plex server configuration
+
+The CLI module (`cli.py`) creates these objects and injects them into `main.py` via:
+
+```python
+import tpdb.main as main_module
+
+main_module.opts = opts_obj
+main_module.poster_data = poster_data
+```
 
 ## Critical Workflows
 
@@ -39,13 +92,36 @@ The core matching logic uses `thefuzz` library with specific scoring thresholds:
 
 ```python
 # Library matching: 70%+ similarity for directory discovery
-posterRootDirs = [path for path in os.listdir(POSTER_DIR)
-                 if fuzz.partial_ratio(selectedLibrary.title, path) > 70]
+poster_root_dirs = [
+    os.path.join(POSTER_DIR, path)
+    for path in os.listdir(POSTER_DIR)
+    if fuzz.partial_ratio(selected_library.title, path) > 70
+]
 
 # Media matching: Uses token_set_ratio with normalize_name() preprocessing
 def normalize_name(name: str) -> str:
     # Removes years, 'set by' text, punctuation, converts to lowercase
 ```
+
+### User Interaction Pattern
+
+The refactored codebase uses **typer** for prompts and **rich** for output:
+
+```python
+# Input prompts (typer)
+if typer.confirm("Proceed with this match?", default=True):
+    # ... process
+
+# Console output (rich with markup)
+console.print("[bold cyan]Processing library:[/bold cyan] Movies")
+console.print(f"[bold green]✓[/bold green] Successfully processed {count} files")
+```
+
+**Helper functions** encapsulate common prompt patterns:
+
+- `prompt_match_confirmation()` - Shows match with score and color-coded rating
+- `prompt_collection_organization()` - Handles collection/set organization prompts
+- `prompt_poster_organization()` - Offers match/force/skip options
 
 ### File Organization Conventions
 
@@ -132,21 +208,52 @@ Follow these conventions for commits, branches, and pull requests:
 
 ```bash
 # Test main functionality
-python tpdb.py --help
-python tpdb.py -l Movies --action new
-python tpdb.py -l "TV Shows" --action sync
+tpdb --help
+tpdb -l Movies --action new
+tpdb -l "TV Shows" --action sync
 
 # Test duplicates utility
-python duplicates.py /path/to/test/posters
+tpdb find-dupes /path/to/test/posters
 
 # Test download functionality
-python tpdb.py --download "https://theposterdb.com/set/12345"
+tpdb -d "https://theposterdb.com/set/12345"
 ```
+
+### Development Scripts
+
+The `scripts/` directory contains utilities for code maintenance:
+
+- **`analyze_naming.py`**: Detects camelCase names that should be snake_case
+
+  - Read-only analysis tool
+  - Can be imported as a module
+  - Filters out external library calls
+
+- **`apply_snake_case.py`**: Automatically converts camelCase to snake_case
+
+  - Imports detection logic from `analyze_naming.py`
+  - Supports `--dry-run` and `--interactive` modes
+  - Uses word-boundary regex for safe replacements
+
+**Usage:**
+
+```bash
+# Analyze codebase
+python scripts/analyze_naming.py
+
+# Preview conversions
+python scripts/apply_snake_case.py --dry-run
+
+# Apply conversions interactively
+python scripts/apply_snake_case.py --interactive
+```
+
+See `scripts/README.md` for detailed documentation.
 
 ### Duplicate Detection Utility
 
-- `python duplicates.py` - Find duplicate posters (defaults to /data/Posters)
-- `python duplicates.py /path/to/posters` - Find duplicates in specific directory
+- `tpdb find-dupes` - Find duplicate posters (defaults to /data/Posters)
+- `tpdb find-dupes /path/to/posters` - Find duplicates in specific directory
 - Uses fuzzy matching with 74+ score threshold for duplicate detection
 
 ### File Processing Flow
@@ -159,25 +266,57 @@ python tpdb.py --download "https://theposterdb.com/set/12345"
 
 ### Command Line Interface
 
-Key workflow commands:
+The package is installed with a `tpdb` command-line entry point:
 
-- `python tpdb.py` - Run in interactive mode (prompts for user decisions)
-- `python tpdb.py --download <URL>` - Download from The Poster DB
-- `python tpdb.py --action new` - Process new posters/zips (default)
-- `python tpdb.py --action sync` - Organize existing poster folders
-- `python tpdb.py --copy` - Create hard links to media folders
-- `python tpdb.py --unlinked` - Find orphaned poster folders
-- `python tpdb.py --force` - Process movie posters without matching to media folder
-- `python tpdb.py --all` - Replace all poster files without prompting
-- `python tpdb.py --filter <string>` - Filter source poster folders by string match
-- `python tpdb.py -l <library1> <library2>` - Process specific Plex libraries
+**Main commands:**
+
+- `tpdb` - Run main poster organization (interactive mode by default)
+- `tpdb download <URL>` - Download from ThePosterDB
+- `tpdb find-dupes [directory]` - Find duplicate poster folders
+
+**Main command options:**
+
+- `-l, --libraries <names>` - Process specific Plex libraries (defaults to all)
+- `--action <new|sync>` - Process new posters (default) or sync existing folders
+- `-u, --unlinked` - Find and process orphaned poster folders
+- `-f, --force` - Process movie posters without matching to media folder
+- `--filter <string>` - Filter source poster folders by string match
+- `-a, --all` - Replace all poster files without prompting
+- `-c, --copy` - Create hard links to media folders
+- `-d, --download <URL>` - Download from ThePosterDB (then continue processing)
+
+**Example workflows:**
+
+```bash
+# Download and organize
+tpdb -d "https://theposterdb.com/set/12345" -l Movies --action new
+
+# Sync existing posters and copy to media
+tpdb -l "TV Shows" --action sync --copy
+
+# Find and fix unlinked posters
+tpdb -l Movies --unlinked
+
+# Find duplicates
+tpdb find-dupes /data/Posters
+```
 
 ### Dependencies
 
 - **PlexAPI**: Plex server communication and library scanning
 - **thefuzz**: Fuzzy string matching for media name association
-- **requests**: HTTP downloads with progress bars (`alive_progress`)
+- **requests**: HTTP downloads
 - **pyrfc6266**: Content-Disposition header parsing for downloads
+- **typer[all]**: Modern CLI framework (includes rich)
+- **rich**: Terminal formatting and progress bars (replaced alive_progress)
+
+### Development Dependencies
+
+- **pytest**: Test framework
+- **ruff**: Fast Python linter and formatter (replaced flake8/black)
+- **pre-commit**: Git hooks for code quality
+- **commitizen**: Conventional commits tooling
+- **detect-secrets**: Prevent committing secrets
 
 ### Pre-commit Hook Configuration
 
@@ -199,17 +338,39 @@ Currently minimal - most functions assume successful operations. When adding err
 
 ### Interactive User Input
 
-Heavy use of `input()` prompts for user decisions. Maintain this pattern for new features requiring user confirmation.
+Uses **typer** for prompts (`typer.confirm()`, `typer.prompt()`) and **rich** for output (`console.print()` with markup). Maintain this pattern for new features requiring user confirmation.
 
 ### File Operations
 
-Always use absolute paths. The codebase mixes `os.path` and string operations - prefer `os.path.join()` for cross-platform compatibility.
+Always use absolute paths. The codebase uses `os.path` operations - prefer `os.path.join()` for cross-platform compatibility.
 
 ### Naming Conventions
 
-- Functions use camelCase (e.g., `findBestMediaMatch`, `organizeMovieFolder`)
-- Variables use camelCase or snake_case inconsistently
-- Class names use PascalCase
+- **Functions**: snake_case (e.g., `find_best_media_match`, `organize_movie_folder`)
+- **Variables**: snake_case (e.g., `best_match`, `poster_folders`)
+- **Class names**: PascalCase (e.g., `LibraryData`, `Posters`, `Options`)
+- **Helper functions**: Documented with Google-style docstrings including Args/Returns
+
+### Console Output Patterns
+
+Use rich markup for consistent, beautiful output:
+
+```python
+# Success messages
+console.print("[bold green]✓[/bold green] Operation completed")
+
+# Info messages
+console.print("[bold cyan]Processing:[/bold cyan] Movie Library")
+
+# Warnings
+console.print("[yellow]Warning:[/yellow] Match score below threshold")
+
+# Errors
+console.print("[bold red]Error:[/bold red] Library not found")
+
+# Dimmed/secondary info
+console.print(f"  Source: [dim]{file_name}[/dim]")
+```
 
 ### Important Development Notes
 

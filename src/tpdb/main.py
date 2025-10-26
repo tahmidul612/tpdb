@@ -420,7 +420,6 @@ def copyPosters(posterFolder):
                     os.link(orig_file, new_file)
 
 
-import string
 
 
 def normalize_name(name: str) -> str:

@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-tpdb = "tpdb.cli:app"
+tpdb = "tpdb.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.4,<0.10.0"]

@@ -11,10 +11,10 @@ This tool is perfect for users who want to maintain a clean and organized poster
 - [Installation](#installation)
 - [Setup](#setup)
   - [Plex Configuration](#plex-configuration)
-- [Usage (`tpdb.py`)](#usage-tpdbpy)
+- [Usage](#usage)
   - [Command-Line Arguments](#command-line-arguments)
   - [Examples](#examples)
-- [Finding Duplicates (`duplicates.py`)](#finding-duplicates-duplicatespy)
+- [Finding Duplicates](#finding-duplicates)
 - [Example Poster Directory Structure](#example-poster-directory-structure)
 
 ## Key Features
@@ -23,7 +23,8 @@ This tool is perfect for users who want to maintain a clean and organized poster
 - **Organize Media**: Automatically match posters to your Plex library and organize them into a clean, nested folder structure.
 - **Handle Collections**: Process poster sets for movie collections, organizing each poster into a subfolder for the corresponding movie.
 - **Sync with Plex**: Hardlink organized posters directly into your media folders for Plex to use.
-- **Find Duplicates**: A companion script to help you identify and clean up potential duplicate poster folders.
+- **Find Duplicates**: Identify and clean up potential duplicate poster folders.
+- **Modern CLI**: Built with typer and rich for a beautiful, user-friendly command-line experience.
 
 ## Installation
 
@@ -36,10 +37,16 @@ To get started with the Plex Poster Organizer, follow these steps:
    cd tpdb
    ```
 
-1. **Install dependencies:**
+2. **Install the package:**
 
    ```console
-   pip install -r requirements.txt
+   pip install -e .
+   ```
+
+   Or if you're developing:
+
+   ```console
+   pip install -e .[dev]
    ```
 
 ## Setup
@@ -48,20 +55,20 @@ To get started with the Plex Poster Organizer, follow these steps:
 
 The script needs to connect to your Plex server to fetch your library information for matching posters to media.
 
-When you run `tpdb.py` for the first time, it will prompt you to enter your Plex URL and an authentication token.
+When you run `tpdb` for the first time, it will prompt you to enter your Plex URL and an authentication token.
 
 - **Plex URL**: The address of your Plex server (e.g., `http://192.168.1.100:32400`).
 - **Plex Token**: You can find your token by following [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
 
 If you choose to save the configuration, the script will create a `config.ini` file at `~/.config/plexapi/config.ini` with your credentials. This avoids the need to enter them every time you run the script.
 
-## Usage (`tpdb.py`)
+## Usage
 
-The main script for organizing your posters is `tpdb.py`. It offers a range of options to customize its behavior.
+The main command-line tool is `tpdb`. It offers a range of options to customize its behavior.
 
 ### Command-Line Arguments
 
-Here are the available command-line arguments for `tpdb.py`:
+Here are the available command-line arguments for `tpdb`:
 
 | Argument | Short | Description |
 | :--- | :--- | :--- |
@@ -74,48 +81,67 @@ Here are the available command-line arguments for `tpdb.py`:
 | `--copy` | `-c` | Hardlink the organized posters to your media folders for Plex to use directly. |
 | `--download <url>` | `-d` | Download a poster from a TPDb URL. |
 
+### Available Commands
+
+- `tpdb` - Main poster organization (with options above)
+- `tpdb download <url>` - Download a poster from The Poster DB
+- `tpdb find-dupes [directory]` - Find duplicate poster folders
+
 ### Examples
 
 - **Download a poster set from TPDb:**
 
   ```console
-  python tpdb.py -d "https://theposterdb.com/set/12345"
+  tpdb download "https://theposterdb.com/set/12345"
+  ```
+
+  Or using the `-d` flag:
+
+  ```console
+  tpdb -d "https://theposterdb.com/set/12345"
   ```
 
 - **Organize new posters for your 'Movies' library:**
   This will process new zip files and loose poster files, matching them to your movies.
 
   ```console
-  python tpdb.py -l Movies --action new
+  tpdb -l Movies --action new
   ```
 
 - **Sync existing show posters and copy them to media folders:**
   This will organize existing TV show poster folders and then hardlink them to your TV show media directories.
 
   ```console
-  python tpdb.py -l "TV Shows" --action sync --copy
+  tpdb -l "TV Shows" --action sync --copy
   ```
 
 - **Find and fix unlinked movie posters:**
   This will scan for poster folders that don't match any movie in your library and prompt you to fix them.
 
   ```console
-  python tpdb.py -l Movies --unlinked
+  tpdb -l Movies --unlinked
   ```
 
-## Finding Duplicates (`duplicates.py`)
-
-This repository includes a helpful utility, `duplicates.py`, to find potential duplicate poster folders within your collection. This is useful for cleaning up your poster directory.
-
-- **To run the script:**
+- **Find duplicate poster folders:**
+  This will scan your poster directory for potential duplicates.
 
   ```console
-  python duplicates.py /path/to/your/posters
+  tpdb find-dupes /path/to/your/posters
+  ```
+
+## Finding Duplicates
+
+The `find-dupes` command helps you identify potential duplicate poster folders within your collection. This is useful for cleaning up your poster directory.
+
+- **To run the command:**
+
+  ```console
+  tpdb find-dupes /path/to/your/posters
   ```
 
   If you don't provide a path, it defaults to `/data/Posters`.
 
-The script will scan the directory and print a list of potential duplicates based on name similarity, which you can then review and manage manually.
+The command will scan the directory and print a list of potential duplicates based on name similarity, which you can then review and manage manually.
 
 ## Example Poster Directory Structure
 

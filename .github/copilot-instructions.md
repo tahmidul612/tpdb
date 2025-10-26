@@ -75,6 +75,24 @@ The tool expects a specific poster directory structure:
 
 ## Development Practices
 
+### Development Environment Setup
+
+**Prerequisites**: Python 3.14+, Git, and uv package manager
+
+**Setup workflow**:
+
+```bash
+# Clone and setup
+git clone https://github.com/YOUR_USERNAME/tpdb.git
+cd tpdb
+
+# Install dependencies and dev tools
+uv sync --group dev
+
+# Setup pre-commit hooks
+pre-commit install --hook-type commit-msg --hook-type pre-push
+```
+
 ### Git Workflow Standards
 
 Follow these conventions for commits, branches, and pull requests:
@@ -109,6 +127,21 @@ Follow these conventions for commits, branches, and pull requests:
 - Single test file: `tests/test_main.py` testing only `normalize_name()` function
 - Run tests: `pytest` or `python -m pytest tests/`
 - Very limited test coverage - most functionality untested
+
+**Project-specific testing examples**:
+
+```bash
+# Test main functionality
+python tpdb.py --help
+python tpdb.py -l Movies --action new
+python tpdb.py -l "TV Shows" --action sync
+
+# Test duplicates utility
+python duplicates.py /path/to/test/posters
+
+# Test download functionality
+python tpdb.py --download "https://theposterdb.com/set/12345"
+```
 
 ### Duplicate Detection Utility
 
@@ -146,6 +179,18 @@ Key workflow commands:
 - **requests**: HTTP downloads with progress bars (`alive_progress`)
 - **pyrfc6266**: Content-Disposition header parsing for downloads
 
+### Pre-commit Hook Configuration
+
+The project uses extensive pre-commit hooks for quality control:
+
+- **uv-lock & uv-export**: Automatically update dependency files when pyproject.toml changes
+- **ruff-check & ruff-format**: Lint and format Python code
+- **trailing-whitespace**: Remove trailing whitespace
+- **mixed-line-ending**: Ensure LF line endings
+- **mdformat**: Format Markdown files
+- **commitizen**: Validate commit messages and branch names
+- **detect-secrets**: Check for accidentally committed secrets
+
 ## Code Patterns to Follow
 
 ### Error Handling
@@ -165,5 +210,12 @@ Always use absolute paths. The codebase mixes `os.path` and string operations - 
 - Functions use camelCase (e.g., `findBestMediaMatch`, `organizeMovieFolder`)
 - Variables use camelCase or snake_case inconsistently
 - Class names use PascalCase
+
+### Important Development Notes
+
+- **Target Python Version**: Requires Python 3.14+ (as specified in pyproject.toml)
+- **Dependency Management**: Uses uv for fast package management and lock file generation
+- **File Organization**: Always test with both movie and TV show libraries as they have different organization patterns
+- **Interactive Nature**: Most functionality requires user input and confirmation prompts
 
 When modifying fuzzy matching logic, always test with the `normalize_name()` function and maintain the existing threshold values that users depend on.

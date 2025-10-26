@@ -41,9 +41,9 @@ def find_dupes(
 ):
     """Find duplicate posters using fuzzy matching."""
     # Import and run the duplicates main function
-    import sys
     sys.argv = ["find-dupes", directory]
     from tpdb.dupes import main as dupes_main
+
     dupes_main()
 
 
@@ -90,7 +90,7 @@ def main_callback(
     # If a subcommand was invoked, don't run the main logic
     if ctx.invoked_subcommand is not None:
         return
-    
+
     # Import here to avoid circular imports and to delay loading
     import collections
     import os
@@ -111,31 +111,31 @@ def main_callback(
         check_file,
         downloadPoster,
     )
-    
+
     # Handle download
     if download_url:
         downloadPoster(download_url)
         return
-    
+
     # Get Plex configuration
     plex_url = ""
     plex_token = ""
-    
+
     if CONFIG:
         plex_token = CONFIG.data["auth"].get("server_token", "")
         plex_url = CONFIG.data["auth"].get("server_baseurl", "")
-    
+
     if not plex_token or not plex_url:
         if not plex_token:
             plex_token = typer.prompt("Please enter your Plex auth token")
         if not plex_url:
             plex_url = typer.prompt("Please enter your Plex URL")
-        
+
         if typer.confirm("Save config?"):
             config_directory = os.path.expanduser("~/.config/plexapi")
             os.makedirs(config_directory, exist_ok=True)
             config_file_path = os.path.join(config_directory, "config.ini")
-            
+
             if not os.path.exists(config_file_path):
                 with open(config_file_path, "w") as configfile:
                     configfile.write("[auth]\n")
@@ -149,7 +149,7 @@ def main_callback(
                         "[bold yellow]Config file already contains data, but server_baseurl and "
                         "server_token were not found. Please update it manually.[/bold yellow]"
                     )
-    
+
     plex = PlexServer(plex_url, plex_token)
     all_libraries = []
     for library in plex.library.sections():
@@ -157,11 +157,11 @@ def main_callback(
             all_libraries.append(
                 LibraryData(library.title, library.type, library.locations)
             )
-    
+
     # Set library names
     if not libraries:
         libraries = [lib.title for lib in all_libraries]
-    
+
     # Process each library
     for library_name in libraries:
         selected_library = next(
@@ -170,14 +170,14 @@ def main_callback(
         if not selected_library:
             console.print(f"[bold red]Library '{library_name}' not found.[/bold red]")
             continue
-        
+
         console.print(f"\n[bold cyan]Processing library:[/bold cyan] {library_name}")
         poster_data = Posters([], [], {}, collections.defaultdict(list))
-        
+
         # This is a workaround for the global variable issue
         # We need to inject the options and poster_data into the module
         import tpdb.main as main_module
-        
+
         # Create a fake opts object
         class Opts:
             def __init__(self):
@@ -187,16 +187,16 @@ def main_callback(
                 self.unlinked = unlinked
                 self.action = action
                 self.filter = filter_str
-        
+
         main_module.opts = Opts()
         main_module.poster_data = poster_data
-        
+
         if selected_library.type in ["movie", "show"]:
             # Get all media folders in the library
             for path in selected_library.locations:
                 for name in os.listdir(path):
                     poster_data.mediaFolderNames[name].append(path)
-            
+
             # Get poster root directories for the library
             poster_root_dirs = [
                 os.path.join(POSTER_DIR, path)
@@ -204,7 +204,7 @@ def main_callback(
                 if fuzz.partial_ratio(selected_library.title, path) > 70
             ]
             findPosters(poster_root_dirs)
-            
+
             if filter_str:
                 folder_and_score = [
                     e
@@ -224,7 +224,7 @@ def main_callback(
                 console.print(
                     f"[bold]Filtered poster folders:[/bold]\n{poster_data.posterFolders}"
                 )
-            
+
             match selected_library.type:
                 case "movie":
                     if unlinked:
@@ -287,7 +287,7 @@ def main_callback(
                         ]
                         for folder in unorganized_poster_folders:
                             organizeShowFolder(folder)
-            
+
             # Move posters to media folders
             if copy:
                 for folder in poster_data.posterFolders:

@@ -15,7 +15,6 @@ from plexapi.server import CONFIG, PlexServer
 from thefuzz import fuzz, process
 from alive_progress import alive_bar
 
-from pprint import pprint
 
 # Data classes
 class LibraryData:

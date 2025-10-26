@@ -582,10 +582,9 @@ def organize_movie_collection_folder(folder_dir):
             )
 
             if matched_media:
-                user_in = typer.prompt(
-                    f"Matched poster file {file} to movie {matched_media[0]} [score: {matched_media[1]}], proceed? (y/n/f)",
-                    default="y",
-                ).lower()
+                user_in = prompt_poster_organization(
+                    file, matched_media[0], matched_media[1]
+                )
 
                 if user_in in ["y", "f"]:
                     # Determine folder name: use match name for 'y', original file name for 'f'
@@ -613,9 +612,9 @@ def organize_movie_collection_folder(folder_dir):
                     continue
             else:
                 # No match found - ask if user wants to force rename
-                if typer.confirm(
-                    f"No match found for poster file {file}. Force rename?"
-                ):
+                console.print()
+                console.print(f"[yellow]No match found for:[/yellow] [dim]{file}[/dim]")
+                if typer.confirm("Force rename anyway?", default=False):
                     folder_name = os.path.splitext(file)[0]
 
                     # Create a subfolder within the collection folder

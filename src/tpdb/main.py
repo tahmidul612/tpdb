@@ -176,7 +176,9 @@ def downloadPoster(url):
                 [customFilename, os.path.splitext(os.path.basename(url))[1]]
             )
         else:
-            console.print("[bold red]Could not find a filename, aborting download[/bold red]")
+            console.print(
+                "[bold red]Could not find a filename, aborting download[/bold red]"
+            )
             return
         console.print("[bold cyan]Select folder to save poster file[/bold cyan]")
         for i, dir in enumerate(os.listdir(POSTER_DIR), start=1):
@@ -184,10 +186,12 @@ def downloadPoster(url):
         dirIndex = Prompt.ask("Enter folder number")
         saveDir = os.path.join(POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex) - 1])
         totalBytes = int(response.headers.get("content-length", 0)) or None
-        
+
         with open(os.path.join(saveDir, filename), "wb") as file:
             with Progress() as progress:
-                task = progress.add_task(f"[cyan]Downloading {filename}...", total=totalBytes)
+                task = progress.add_task(
+                    f"[cyan]Downloading {filename}...", total=totalBytes
+                )
                 for chunk in response.iter_content(chunk_size=4096):
                     file.write(chunk)
                     if totalBytes:

@@ -39,13 +39,17 @@ def main():
 
     dir_list = subdirs(opts.dir)
     if not dir_list or len(dir_list) < 2:
-        console.print(f"[bold red]There must be >=2 subdirectories in {opts.dir} to find duplicates.[/bold red]")
+        console.print(
+            f"[bold red]There must be >=2 subdirectories in {opts.dir} to find duplicates.[/bold red]"
+        )
         exit(1)
 
     max_depth = max(dir_list, key=lambda x: x[1])[1]
 
     for depth in range(0, max_depth + 1):
-        console.print(f"[bold cyan]Checking for duplicates at level {depth}...[/bold cyan]")
+        console.print(
+            f"[bold cyan]Checking for duplicates at level {depth}...[/bold cyan]"
+        )
         # Get all directories at the current depth
         current_level_dirs = [d[0] for d in dir_list if d[1] == depth]
 
@@ -84,7 +88,9 @@ def main():
             match_list.append(d)  # Add it back for the next iteration
 
         if not found_duplicates:
-            console.print(f"\t- [bold green]No duplicates found at level {depth}.[/bold green]")
+            console.print(
+                f"\t- [bold green]No duplicates found at level {depth}.[/bold green]"
+            )
 
 
 def subdirs(directory: str) -> List[tuple[str, int]]:
@@ -100,7 +106,9 @@ def subdirs(directory: str) -> List[tuple[str, int]]:
     """
     dir_list = []
     if not os.path.isdir(directory):
-        console.print(f"[bold red]Error: Directory {directory} does not exist.[/bold red]")
+        console.print(
+            f"[bold red]Error: Directory {directory} does not exist.[/bold red]"
+        )
         exit(1)
 
     for d in os.walk(directory):

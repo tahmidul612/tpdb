@@ -112,10 +112,9 @@ def main_callback(
         downloadPoster,
     )
 
-    # Handle download
+    # Handle download (if specified, download first but continue processing)
     if download_url:
         downloadPoster(download_url)
-        return
 
     # Get Plex configuration
     plex_url = ""

@@ -145,26 +145,27 @@ The command will scan the directory and print a list of potential duplicates bas
 
 ## Example Poster Directory Structure
 
-Here is an example of what your poster directory might look like after being organized by this tool. This structure is ideal for use with Kometa.
+Here is an example of what your poster directory might look like after being organized by this tool. This structure is ideal for use with Kometa. Note that individual movie posters are placed in a `Custom` folder (you can change the name to anything, this basically acts as the "catch-all" for any posters that don't fit into a specific collection), while collection posters are organized into their respective collection folders. You can adjust the structure as needed for your setup.
 
 ```text
 /data/Posters/
 ├── Movies/
-│   ├── The Matrix (1999)/
-│   │   ├── poster.jpg
-│   ├── The Matrix Reloaded (2003)/
-│   │   ├── poster.jpg
+│   ├── Custom/
+│   │   ├── The Matrix (1999)/
+│   │   │   └── poster.jpg
+│   │   └── The Matrix Reloaded (2003)/
+│   │       └── poster.jpg
 │   └── Movie Collection Name/
 │       ├── Movie 1 in Collection/
-│       │   ├── poster.jpg
+│       │   └── poster.jpg
 │       └── Movie 2 in Collection/
-│           ├── poster.jpg
+│           └── poster.jpg
 ├── TV Shows/
-│   ├── Breaking Bad/
-│   │   ├── poster.jpg
-│   │   ├── Season01.jpg
-│   │   ├── Season02.jpg
-│   │   └── Season00.jpg  (Specials)
+│   └── Breaking Bad/
+│       ├── poster.jpg
+│       ├── Season01.jpg
+│       ├── Season02.jpg
+│       └── Season00.jpg  (Specials)
 └── Archives/
-    └── (Zipped files are moved here after processing)
+  └── (Zipped files are moved here after processing)
 ```

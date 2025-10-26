@@ -3,7 +3,7 @@ default_stages:
 repos:
   # Handle dependency management with proper sequencing
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.0
+    rev: 0.9.5
     hooks:
       - id: uv-lock
         # Only run when pyproject.toml changes
@@ -26,7 +26,7 @@ repos:
         # Exclude binary or generated files
         exclude: ^(uv\.lock)$
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.14.2
     hooks:
       - args:
           - --fix
@@ -35,7 +35,7 @@ repos:
         id: ruff-check
       - id: ruff-format
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.22
+    rev: 1.0.0
     hooks:
       - additional_dependencies:
           - mdformat-ruff

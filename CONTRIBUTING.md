@@ -135,7 +135,7 @@ This project uses several tools to maintain code quality:
 Ruff handles both linting and formatting Python code. Configuration is in `pyproject.toml`:
 
 - Line length: 88 characters (Black-compatible)
-- Target: Python 3.9+
+- Target: Python 3.10+
 - LF line endings
 
 **Usage**:

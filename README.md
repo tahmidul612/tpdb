@@ -37,7 +37,7 @@ To get started with the Plex Poster Organizer, follow these steps:
    cd tpdb
    ```
 
-2. **Install the package:**
+1. **Install the package:**
 
    ```console
    pip install -e .

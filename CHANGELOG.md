@@ -1,3 +1,10 @@
+## v0.3.1 (2025-10-26)
+
+### Refactor
+
+- replace thefuzz with rapidfuzz dependency
+- create matcher module and migrate to rapidfuzz
+
 ## v0.3.0 (2025-10-26)
 
 ### Feat

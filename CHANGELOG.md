@@ -1,3 +1,26 @@
+## v0.3.0 (2025-10-26)
+
+### Feat
+
+- add scripts for analyzing and converting camelCase to snake_case
+
+### Refactor
+
+- use prompt helper in sync_movie_folder function
+- use prompt helpers in process_zip_file function
+- use prompt helper for poster organization in organize_movie_collection_folder
+- use prompt helper for poster organization in organize_movie_folder
+- extract user prompt helpers into dedicated functions
+- replace input prompts with typer for improved user interaction
+- enhance download handling in main_callback to allow continued processing
+- update function signatures and improve error handling in main.py
+- remove unused import of string module
+- remove unused imports from main.py
+- add Options class and global variables to main.py
+- replace fake Opts class with proper Options class in CLI
+- remove old root-level scripts and integrate rich in dupes.py
+- create src/tpdb structure and add typer/rich dependencies
+
 ## v0.2.0 (2025-10-26)
 
 ### Feat

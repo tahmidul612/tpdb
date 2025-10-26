@@ -40,26 +40,26 @@ class Posters:
     """A data class to hold information about posters.
 
     Attributes:
-        posterFolders (list): A list of paths to folders containing posters.
-        posterFiles (list): A list of paths to individual poster files.
-        posterZipFiles (dict): A dictionary mapping zip file names to their paths.
-        mediaFolderNames (collections.defaultdict): A dictionary mapping media folder names
+        poster_folders (list): A list of paths to folders containing posters.
+        poster_files (list): A list of paths to individual poster files.
+        poster_zip_files (dict): A dictionary mapping zip file names to their paths.
+        media_folder_names (collections.defaultdict): A dictionary mapping media folder names
             to a list of their root paths.
     """
 
     def __init__(
         self,
-        posterFolders=None,
-        posterFiles=None,
-        posterZipFiles=None,
-        mediaFolderNames=None,
+        poster_folders=None,
+        poster_files=None,
+        poster_zip_files=None,
+        media_folder_names=None,
     ):
-        self.posterFolders = posterFolders if posterFolders is not None else []
-        self.posterFiles = posterFiles if posterFiles is not None else []
-        self.posterZipFiles = posterZipFiles if posterZipFiles is not None else {}
-        self.mediaFolderNames = (
-            mediaFolderNames
-            if mediaFolderNames is not None
+        self.poster_folders = poster_folders if poster_folders is not None else []
+        self.poster_files = poster_files if poster_files is not None else []
+        self.poster_zip_files = poster_zip_files if poster_zip_files is not None else {}
+        self.media_folder_names = (
+            media_folder_names
+            if media_folder_names is not None
             else collections.defaultdict(list)
         )
 
@@ -128,7 +128,7 @@ def update_config(config_path):
     return updated
 
 
-def downloadPoster(url):
+def download_poster(url):
     """Downloads a poster from a given URL.
 
     This function can handle URLs from 'theposterdb.com' for sets and individual
@@ -143,38 +143,38 @@ def downloadPoster(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
-    customFilename = None
+    custom_filename = None
     filename = None
     if "theposterdb.com/set" in url:
-        posterID = url.split("/")[-1]
-        downloadUrl = f"https://theposterdb.com/set/download/{posterID}"
+        poster_id = url.split("/")[-1]
+        download_url = f"https://theposterdb.com/set/download/{poster_id}"
     elif "theposterdb.com/poster" in url:
-        posterID = url.split("/")[-1]
-        downloadUrl = f"https://theposterdb.com/api/assets/{posterID}"
+        poster_id = url.split("/")[-1]
+        download_url = f"https://theposterdb.com/api/assets/{poster_id}"
     elif "theposterdb.com/api/assets" in url:
-        downloadUrl = url
+        download_url = url
     else:
-        downloadUrl = url
-        customFilename = Prompt.ask("Enter movie name for poster file (no ext)")
-    if downloadUrl:
-        response = requests.get(downloadUrl, headers=headers, stream=True)
+        download_url = url
+        custom_filename = Prompt.ask("Enter movie name for poster file (no ext)")
+    if download_url:
+        response = requests.get(download_url, headers=headers, stream=True)
     else:
         console.print("[bold red]Invalid URL[/bold red]")
         return
     if response.status_code == 200:
         filename = response.headers.get("content-disposition", None)
-        if not customFilename and filename:
+        if not custom_filename and filename:
             filename = pyrfc6266.parse_filename(filename)
-        elif customFilename and filename:
+        elif custom_filename and filename:
             filename = "".join(
                 [
-                    customFilename,
+                    custom_filename,
                     os.path.splitext(pyrfc6266.parse_filename(filename))[1],
                 ]
             )
-        elif customFilename:
+        elif custom_filename:
             filename = "".join(
-                [customFilename, os.path.splitext(os.path.basename(url))[1]]
+                [custom_filename, os.path.splitext(os.path.basename(url))[1]]
             )
         else:
             console.print(
@@ -184,25 +184,25 @@ def downloadPoster(url):
         console.print("[bold cyan]Select folder to save poster file[/bold cyan]")
         for i, dir in enumerate(os.listdir(POSTER_DIR), start=1):
             console.print(f"{i}: {dir}")
-        dirIndex = Prompt.ask("Enter folder number")
-        saveDir = os.path.join(POSTER_DIR, os.listdir(POSTER_DIR)[int(dirIndex) - 1])
-        totalBytes = int(response.headers.get("content-length", 0)) or None
+        dir_index = Prompt.ask("Enter folder number")
+        save_dir = os.path.join(POSTER_DIR, os.listdir(POSTER_DIR)[int(dir_index) - 1])
+        total_bytes = int(response.headers.get("content-length", 0)) or None
 
-        with open(os.path.join(saveDir, filename), "wb") as file:
+        with open(os.path.join(save_dir, filename), "wb") as file:
             with Progress() as progress:
                 task = progress.add_task(
-                    f"[cyan]Downloading {filename}...", total=totalBytes
+                    f"[cyan]Downloading {filename}...", total=total_bytes
                 )
                 for chunk in response.iter_content(chunk_size=4096):
                     file.write(chunk)
-                    if totalBytes:
+                    if total_bytes:
                         progress.update(task, advance=len(chunk))
         console.print(f"[bold green]File downloaded as '{filename}'[/bold green]")
     else:
         console.print("[bold red]Failed to download the file[/bold red]")
 
 
-def organizeMovieFolder(folderDir):
+def organize_movie_folder(folder_dir):
     """Organizes a folder of movie posters.
 
     Renames poster files and creates a subfolder named after each movie,
@@ -210,18 +210,18 @@ def organizeMovieFolder(folderDir):
     exact or strong fuzzy match to a media folder.
 
     Args:
-        folderDir (str): The path to the folder containing the movie posters.
+        folder_dir (str): The path to the folder containing the movie posters.
     """
     global poster_data, opts
-    for file in os.listdir(folderDir):
-        sourceFile = os.path.join(folderDir, file)
+    for file in os.listdir(folder_dir):
+        source_file = os.path.join(folder_dir, file)
         collection = False
-        matchedMedia = []
-        if os.path.isfile(sourceFile):
+        matched_media = []
+        if os.path.isfile(source_file):
             if "Collection" not in file:
-                matchedMedia = process.extractOne(
+                matched_media = process.extractOne(
                     file,
-                    poster_data.mediaFolderNames.keys(),
+                    poster_data.media_folder_names.keys(),
                     scorer=fuzz.token_sort_ratio,
                 )
             else:
@@ -230,32 +230,32 @@ def organizeMovieFolder(folderDir):
             if opts.force:
                 user_in = "f"
             else:
-                if matchedMedia:
+                if matched_media:
                     user_in = typer.prompt(
-                        f"Matched poster file {file} to movie {matchedMedia[0]}, proceed? (y/n/f)",
+                        f"Matched poster file {file} to movie {matched_media[0]}, proceed? (y/n/f)",
                         default="y",
                     ).lower()
                 else:
                     user_in = None
             # Choosing option 'f' follows the force renaming logic for the movie folder/poster
-            if opts.force or collection or (matchedMedia and user_in in ["y", "f"]):
-                fileName = (
+            if opts.force or collection or (matched_media and user_in in ["y", "f"]):
+                file_name = (
                     os.path.splitext(os.path.basename(file))[0]
                     if (opts.force or user_in == "f" or collection)
-                    else matchedMedia[0]  # type: ignore[index]
+                    else matched_media[0]  # type: ignore[index]
                 )
-                fileExtension = os.path.splitext(file)[1]
-                newFolder = os.path.join(folderDir, fileName)
-                if os.path.isdir(newFolder):
-                    shutil.rmtree(newFolder)
-                os.mkdir(newFolder)
-                destinationFile = os.path.join(
-                    newFolder, ("poster%s" % (fileExtension))
+                file_extension = os.path.splitext(file)[1]
+                new_folder = os.path.join(folder_dir, file_name)
+                if os.path.isdir(new_folder):
+                    shutil.rmtree(new_folder)
+                os.mkdir(new_folder)
+                destination_file = os.path.join(
+                    new_folder, ("poster%s" % (file_extension))
                 )
-                os.rename(sourceFile, destinationFile)
+                os.rename(source_file, destination_file)
 
 
-def organizeShowFolder(folderDir):
+def organize_show_folder(folder_dir):
     """Organizes TV show posters in a given folder.
 
     This function renames TV show poster files to match the expected Plex
@@ -263,37 +263,37 @@ def organizeShowFolder(folderDir):
     It handles season posters, special season posters, and the main show poster.
 
     Args:
-        folderDir (str): The directory path containing the TV show poster files.
+        folder_dir (str): The directory path containing the TV show poster files.
     """
     global poster_data
-    for file in os.listdir(folderDir):
-        sourceFile = os.path.join(folderDir, file)
-        if os.path.isfile(sourceFile):
+    for file in os.listdir(folder_dir):
+        source_file = os.path.join(folder_dir, file)
+        if os.path.isfile(source_file):
             if "Season" in file:
                 x = re.search(r"\b(?<=Season )\d+", file)
                 if x:
-                    seasonNumber = str(x.group()).zfill(2)
-                    fileExtension = os.path.splitext(file)[1]
-                    destinationFile = os.path.join(
-                        folderDir, ("Season%s%s" % (seasonNumber, fileExtension))
+                    season_number = str(x.group()).zfill(2)
+                    file_extension = os.path.splitext(file)[1]
+                    destination_file = os.path.join(
+                        folder_dir, ("Season%s%s" % (season_number, file_extension))
                     )
-                    os.rename(sourceFile, destinationFile)
+                    os.rename(source_file, destination_file)
             elif "Specials" in file:
-                seasonNumber = "00"
-                fileExtension = os.path.splitext(file)[1]
-                destinationFile = os.path.join(
-                    folderDir, ("Season%s%s" % (seasonNumber, fileExtension))
+                season_number = "00"
+                file_extension = os.path.splitext(file)[1]
+                destination_file = os.path.join(
+                    folder_dir, ("Season%s%s" % (season_number, file_extension))
                 )
-                os.rename(sourceFile, destinationFile)
+                os.rename(source_file, destination_file)
             else:
-                fileExtension = os.path.splitext(file)[1]
-                destinationFile = os.path.join(
-                    folderDir, ("poster%s" % (fileExtension))
+                file_extension = os.path.splitext(file)[1]
+                destination_file = os.path.join(
+                    folder_dir, ("poster%s" % (file_extension))
                 )
-                os.rename(sourceFile, destinationFile)
+                os.rename(source_file, destination_file)
 
 
-def moviePoster():
+def movie_poster():
     """Processes individual movie posters not in a collection folder.
 
     This function iterates through loose poster files and asks the user if they
@@ -301,24 +301,24 @@ def moviePoster():
     useful for preparing posters for use with Kometa or for manual review.
     """
     global poster_data
-    for poster in poster_data.posterFiles:
+    for poster in poster_data.poster_files:
         if typer.confirm(
             f"Move poster file {os.path.basename(poster)} to Custom posters folder?"
         ):
             if "Custom" not in poster:
-                sourceDir = os.path.dirname(poster)
-                destinationDir = os.path.join(sourceDir, "Custom")
+                source_dir = os.path.dirname(poster)
+                destination_dir = os.path.join(source_dir, "Custom")
             else:
-                destinationDir = os.path.dirname(poster)
-            if not os.path.isdir(destinationDir):
-                os.mkdir(destinationDir)
-            shutil.move(poster, destinationDir)
-            organizeMovieFolder(destinationDir)
+                destination_dir = os.path.dirname(poster)
+            if not os.path.isdir(destination_dir):
+                os.mkdir(destination_dir)
+            shutil.move(poster, destination_dir)
+            organize_movie_folder(destination_dir)
         else:
             console.print("[yellow]Skipped files[/yellow]")
 
 
-def findPosters(posterRootDirs):
+def find_posters(poster_root_dirs):
     """Finds and categorizes posters from a list of root directories.
 
     This function scans the provided directories and categorizes the found items
@@ -326,56 +326,56 @@ def findPosters(posterRootDirs):
     individual poster files. It also renames zip files to a cleaner format.
 
     Args:
-        posterRootDirs (list): A list of directory paths to search for posters.
+        poster_root_dirs (list): A list of directory paths to search for posters.
     """
     global poster_data
-    for path1 in posterRootDirs:
+    for path1 in poster_root_dirs:
         for path2 in os.listdir(path1):
-            filePath: str = os.path.join(path1, path2)
-            if zipfile.is_zipfile(filePath):
-                zipFilePath = filePath
+            file_path: str = os.path.join(path1, path2)
+            if zipfile.is_zipfile(file_path):
+                zip_file_path = file_path
                 x = re.search(r"\b.+ set by (?:\S+)", os.path.splitext(path2)[0])
                 if x:
-                    newZipFileName = x.group() + os.path.splitext(path2)[1]
+                    new_zip_file_name = x.group() + os.path.splitext(path2)[1]
                 else:
-                    newZipFileName: str = (
+                    new_zip_file_name: str = (
                         path2.split(".", 1)[0].split("__", 1)[0]
                         + "."
                         + path2.split(".", 1)[1]
                     ).replace("_", " ")
-                # newZipFileName = path2.replace('_', ' ')
-                newZipFilePath = os.path.join(path1, newZipFileName)
-                if path2 != newZipFileName:
-                    os.rename(zipFilePath, newZipFilePath)
-                poster_data.posterZipFiles[newZipFileName] = newZipFilePath
-            elif os.path.isdir(filePath):
-                poster_data.posterFolders.append(filePath)
-            elif os.path.isfile(filePath):
-                poster_data.posterFiles.append(filePath)
+                # new_zip_file_name = path2.replace('_', ' ')
+                new_zip_file_path = os.path.join(path1, new_zip_file_name)
+                if path2 != new_zip_file_name:
+                    os.rename(zip_file_path, new_zip_file_path)
+                poster_data.poster_zip_files[new_zip_file_name] = new_zip_file_path
+            elif os.path.isdir(file_path):
+                poster_data.poster_folders.append(file_path)
+            elif os.path.isfile(file_path):
+                poster_data.poster_files.append(file_path)
             else:
                 continue
 
 
-def copyPosters(posterFolder):
+def copy_posters(poster_folder):
     """Copies posters from a poster folder to the corresponding Plex media folders.
 
     Creates hard links from the poster folder to each media folder location.
 
     Args:
-        posterFolder (str): The path to the organized poster folder.
+        poster_folder (str): The path to the organized poster folder.
     """
     global poster_data, opts
-    mediaFolders = poster_data.mediaFolderNames.get(os.path.basename(posterFolder))
-    if mediaFolders:
-        mediaName = os.path.basename(posterFolder)
-        posterFileNames = os.listdir(posterFolder)
+    media_folders = poster_data.media_folder_names.get(os.path.basename(poster_folder))
+    if media_folders:
+        media_name = os.path.basename(poster_folder)
+        poster_file_names = os.listdir(poster_folder)
         if opts.all or typer.confirm(
-            f"Hardlink posters from [{posterFolder}] to [{mediaFolders}]?"
+            f"Hardlink posters from [{poster_folder}] to [{media_folders}]?"
         ):
-            replaceFiles = False
-            for poster in posterFileNames:
-                for mediaRoot in mediaFolders:
-                    orig_file = os.path.join(posterFolder, poster)
+            replace_files = False
+            for poster in poster_file_names:
+                for media_root in media_folders:
+                    orig_file = os.path.join(poster_folder, poster)
                     new_name = poster
                     if "Season00" in poster:
                         new_name = poster.replace("Season00", "season-specials-poster")
@@ -386,7 +386,7 @@ def copyPosters(posterFolder):
                             + "."
                             + poster.split(".")[1]
                         )
-                    new_file = os.path.join(mediaRoot, mediaName, new_name)
+                    new_file = os.path.join(media_root, media_name, new_name)
                     if check_file(
                         os.path.dirname(new_file), os.path.splitext(new_name)[0]
                     ):
@@ -399,8 +399,8 @@ def copyPosters(posterFolder):
                                 prompt_msg = f"Replace all poster files in {os.path.dirname(new_file)}?"
                             else:
                                 prompt_msg = "Replace existing files?"
-                            if replaceFiles or typer.confirm(prompt_msg):
-                                replaceFiles = True
+                            if replace_files or typer.confirm(prompt_msg):
+                                replace_files = True
                                 delete_file(
                                     os.path.dirname(new_file),
                                     os.path.splitext(new_name)[0],
@@ -434,7 +434,7 @@ def normalize_name(name: str) -> str:
     return name
 
 
-def findBestMediaMatch(poster_zip_name: str, media_names: list):
+def find_best_media_match(poster_zip_name: str, media_names: list):
     """Finds the best media match for a poster zip file.
 
     This function uses fuzzy string matching to find the best match between a
@@ -448,18 +448,18 @@ def findBestMediaMatch(poster_zip_name: str, media_names: list):
     Returns:
         tuple: A tuple containing the best match and the matching score.
     """
-    bestMatch = None
-    bestScore = 0
-    normPoster = normalize_name(poster_zip_name)
+    best_match = None
+    best_score = 0
+    norm_poster = normalize_name(poster_zip_name)
     for candidate in media_names:
-        normCandidate = normalize_name(candidate)
-        score = fuzz.partial_token_sort_ratio(normPoster, normCandidate)
-        if score > bestScore:
-            bestMatch, bestScore = candidate, score
-    return bestMatch, bestScore
+        norm_candidate = normalize_name(candidate)
+        score = fuzz.partial_token_sort_ratio(norm_poster, norm_candidate)
+        if score > best_score:
+            best_match, best_score = candidate, score
+    return best_match, best_score
 
 
-def organizeMovieCollectionFolder(folderDir):
+def organize_movie_collection_folder(folder_dir):
     """Organizes posters for movie collections.
 
     This function is designed to handle folders that contain posters for multiple
@@ -469,48 +469,48 @@ def organizeMovieCollectionFolder(folderDir):
     movie collection posters for use with Kometa.
 
     Args:
-        folderDir (str): The directory containing the collection of posters.
+        folder_dir (str): The directory containing the collection of posters.
     """
     global poster_data
     unmatched_files = []
 
-    for file in os.listdir(folderDir):
-        sourceFile = os.path.join(folderDir, file)
-        if os.path.isfile(sourceFile):
+    for file in os.listdir(folder_dir):
+        source_file = os.path.join(folder_dir, file)
+        if os.path.isfile(source_file):
             # Try to match this poster file to a movie in the library
-            matchedMedia = process.extractOne(
+            matched_media = process.extractOne(
                 file,
-                poster_data.mediaFolderNames.keys(),
+                poster_data.media_folder_names.keys(),
                 scorer=fuzz.token_sort_ratio,
                 score_cutoff=60,
             )
 
-            if matchedMedia:
+            if matched_media:
                 user_in = typer.prompt(
-                    f"Matched poster file {file} to movie {matchedMedia[0]} [score: {matchedMedia[1]}], proceed? (y/n/f)",
+                    f"Matched poster file {file} to movie {matched_media[0]} [score: {matched_media[1]}], proceed? (y/n/f)",
                     default="y",
                 ).lower()
 
                 if user_in in ["y", "f"]:
                     # Determine folder name: use match name for 'y', original file name for 'f'
                     if user_in == "y":
-                        folderName = matchedMedia[0]
+                        folder_name = matched_media[0]
                     else:  # user_in == 'f'
-                        folderName = os.path.splitext(file)[0]
+                        folder_name = os.path.splitext(file)[0]
 
                     # Create a subfolder for this movie within the collection folder
-                    movieFolder = os.path.join(folderDir, folderName)
-                    if os.path.isdir(movieFolder):
-                        shutil.rmtree(movieFolder)
-                    os.mkdir(movieFolder)
+                    movie_folder = os.path.join(folder_dir, folder_name)
+                    if os.path.isdir(movie_folder):
+                        shutil.rmtree(movie_folder)
+                    os.mkdir(movie_folder)
 
-                    fileExtension = os.path.splitext(file)[1]
-                    destinationFile = os.path.join(
-                        movieFolder, ("poster%s" % fileExtension)
+                    file_extension = os.path.splitext(file)[1]
+                    destination_file = os.path.join(
+                        movie_folder, ("poster%s" % file_extension)
                     )
-                    os.rename(sourceFile, destinationFile)
+                    os.rename(source_file, destination_file)
                     console.print(
-                        f"[green]Organized {file} into {folderName} folder[/green]"
+                        f"[green]Organized {file} into {folder_name} folder[/green]"
                     )
                 else:
                     console.print(f"[yellow]Skipped {file}[/yellow]")
@@ -520,27 +520,27 @@ def organizeMovieCollectionFolder(folderDir):
                 if typer.confirm(
                     f"No match found for poster file {file}. Force rename?"
                 ):
-                    folderName = os.path.splitext(file)[0]
+                    folder_name = os.path.splitext(file)[0]
 
                     # Create a subfolder within the collection folder
-                    movieFolder = os.path.join(folderDir, folderName)
-                    if os.path.isdir(movieFolder):
-                        shutil.rmtree(movieFolder)
-                    os.mkdir(movieFolder)
+                    movie_folder = os.path.join(folder_dir, folder_name)
+                    if os.path.isdir(movie_folder):
+                        shutil.rmtree(movie_folder)
+                    os.mkdir(movie_folder)
 
-                    fileExtension = os.path.splitext(file)[1]
-                    destinationFile = os.path.join(
-                        movieFolder, ("poster%s" % fileExtension)
+                    file_extension = os.path.splitext(file)[1]
+                    destination_file = os.path.join(
+                        movie_folder, ("poster%s" % file_extension)
                     )
-                    os.rename(sourceFile, destinationFile)
+                    os.rename(source_file, destination_file)
                     console.print(
-                        f"[green]Organized {file} into {folderName} folder[/green]"
+                        f"[green]Organized {file} into {folder_name} folder[/green]"
                     )
                 else:
                     unmatched_files.append(file)
 
     if unmatched_files:
-        console.print(f"\n[yellow]Unmatched files in {folderDir}:[/yellow]")
+        console.print(f"\n[yellow]Unmatched files in {folder_dir}:[/yellow]")
         for file in unmatched_files:
             console.print(f"  - {file}")
         console.print(
@@ -548,7 +548,7 @@ def organizeMovieCollectionFolder(folderDir):
         )
 
 
-def processZipFile(selectedLibrary):
+def process_zip_file(selected_library):
     """Processes zipped poster files.
 
     This function iterates through found zip files, matches them to media in the
@@ -558,57 +558,57 @@ def processZipFile(selectedLibrary):
     processing.
 
     Args:
-        selectedLibrary (LibraryData): The Plex library to process posters for.
+        selected_library (LibraryData): The Plex library to process posters for.
     """
     global poster_data
-    for posterZip in poster_data.posterZipFiles.keys():
-        sourceZip = poster_data.posterZipFiles.get(posterZip)
-        if not sourceZip:
+    for poster_zip in poster_data.poster_zip_files.keys():
+        source_zip = poster_data.poster_zip_files.get(poster_zip)
+        if not source_zip:
             continue
-        destinationDir = ""
+        destination_dir = ""
         unzip = ""
-        if selectedLibrary and selectedLibrary.type == "show":
-            bestMatch, bestScore = findBestMediaMatch(
-                posterZip, list(poster_data.mediaFolderNames.keys())
+        if selected_library and selected_library.type == "show":
+            best_match, best_score = find_best_media_match(
+                poster_zip, list(poster_data.media_folder_names.keys())
             )
-            if bestMatch:
-                destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
+            if best_match:
+                destination_dir = os.path.join(os.path.dirname(source_zip), best_match)
                 unzip = (
                     "y"
                     if typer.confirm(
-                        f"Matched zip file {os.path.basename(sourceZip)} to show {bestMatch} [score: {bestScore}], proceed?"
+                        f"Matched zip file {os.path.basename(source_zip)} to show {best_match} [score: {best_score}], proceed?"
                     )
                     else "n"
                 )
             else:
                 console.print("[yellow]No matching media found[/yellow]")
                 continue
-        elif selectedLibrary and selectedLibrary.type == "movie":
-            bestMatch, bestScore = findBestMediaMatch(
-                posterZip, list(poster_data.mediaFolderNames.keys())
+        elif selected_library and selected_library.type == "movie":
+            best_match, best_score = find_best_media_match(
+                poster_zip, list(poster_data.media_folder_names.keys())
             )
             if (
-                bestMatch and bestScore > 70
+                best_match and best_score > 70
             ):  # Only use direct match if score is high enough
-                destinationDir = os.path.join(os.path.dirname(sourceZip), bestMatch)
+                destination_dir = os.path.join(os.path.dirname(source_zip), best_match)
                 unzip = (
                     "y"
                     if typer.confirm(
-                        f"Matched zip file {os.path.basename(sourceZip)} to movie {bestMatch} [score: {bestScore}], proceed?"
+                        f"Matched zip file {os.path.basename(source_zip)} to movie {best_match} [score: {best_score}], proceed?"
                     )
                     else "n"
                 )
             else:
                 # For movie sets/collections, unzip with current name and organize individually
-                destinationDir = os.path.join(
-                    os.path.dirname(sourceZip),
-                    os.path.splitext(os.path.basename(sourceZip))[0],
+                destination_dir = os.path.join(
+                    os.path.dirname(source_zip),
+                    os.path.splitext(os.path.basename(source_zip))[0],
                 )
-                if bestMatch:
+                if best_match:
                     unzip = (
                         "y"
                         if typer.confirm(
-                            f"Low match score ({bestScore}) for {os.path.basename(sourceZip)} to {bestMatch}. Unzip as collection and organize individually?"
+                            f"Low match score ({best_score}) for {os.path.basename(source_zip)} to {best_match}. Unzip as collection and organize individually?"
                         )
                         else "n"
                     )
@@ -616,54 +616,54 @@ def processZipFile(selectedLibrary):
                     unzip = (
                         "y"
                         if typer.confirm(
-                            f"No direct match found for {os.path.basename(sourceZip)}. Unzip as collection and organize individually?"
+                            f"No direct match found for {os.path.basename(source_zip)}. Unzip as collection and organize individually?"
                         )
                         else "n"
                     )
         if unzip == "y":
-            with zipfile.ZipFile(sourceZip, "r") as zip_ref:
+            with zipfile.ZipFile(source_zip, "r") as zip_ref:
                 try:
-                    if os.path.isdir(destinationDir):
-                        shutil.rmtree(destinationDir)
-                    zip_ref.extractall(destinationDir)
+                    if os.path.isdir(destination_dir):
+                        shutil.rmtree(destination_dir)
+                    zip_ref.extractall(destination_dir)
                 except Exception as e:
                     console.print(
                         f"[bold red]Something went wrong extracting the zip: {e}[/bold red]"
                     )
                 else:
-                    if selectedLibrary and selectedLibrary.type == "show":
-                        organizeShowFolder(destinationDir)
-                    elif selectedLibrary and selectedLibrary.type == "movie":
+                    if selected_library and selected_library.type == "show":
+                        organize_show_folder(destination_dir)
+                    elif selected_library and selected_library.type == "movie":
                         # Check if this was a direct match or a collection
-                        bestMatch, bestScore = findBestMediaMatch(
-                            posterZip, list(poster_data.mediaFolderNames.keys())
+                        best_match, best_score = find_best_media_match(
+                            poster_zip, list(poster_data.media_folder_names.keys())
                         )
-                        if bestMatch and bestScore > 70:
+                        if best_match and best_score > 70:
                             # Direct match - use standard organization
-                            organizeMovieFolder(destinationDir)
+                            organize_movie_folder(destination_dir)
                         else:
                             # Collection/set - organize individual movies within the collection
                             console.print(
-                                f"\n[cyan]Processing collection folder: {os.path.basename(destinationDir)}[/cyan]"
+                                f"\n[cyan]Processing collection folder: {os.path.basename(destination_dir)}[/cyan]"
                             )
-                            organizeMovieCollectionFolder(destinationDir)
+                            organize_movie_collection_folder(destination_dir)
                     if typer.confirm("Move zip file to archive folder?"):
                         if os.path.isfile(
                             os.path.join(
-                                POSTER_DIR, "Archives", os.path.basename(sourceZip)
+                                POSTER_DIR, "Archives", os.path.basename(source_zip)
                             )
                         ):
                             os.remove(
                                 os.path.join(
-                                    POSTER_DIR, "Archives", os.path.basename(sourceZip)
+                                    POSTER_DIR, "Archives", os.path.basename(source_zip)
                                 )
                             )
-                        shutil.move(sourceZip, os.path.join(POSTER_DIR, "Archives"))
+                        shutil.move(source_zip, os.path.join(POSTER_DIR, "Archives"))
         else:
             console.print("[yellow]Skipped files[/yellow]")
 
 
-def syncMovieFolder(path):
+def sync_movie_folder(path):
     """Synchronizes a movie folder by matching it to the media library.
 
     This function is used to process folders that may be unlinked or incorrectly
@@ -677,29 +677,29 @@ def syncMovieFolder(path):
     global poster_data
     if len(os.listdir(path)) > 1:
         console.print(f"[cyan]Organizing complex folder: {path}[/cyan]")
-        organizeMovieFolder(path)
+        organize_movie_folder(path)
     else:
-        matchedMedia = process.extractOne(
+        matched_media = process.extractOne(
             path,
-            list(poster_data.mediaFolderNames.keys()),
+            list(poster_data.media_folder_names.keys()),
             scorer=fuzz.token_sort_ratio,
             processor=lambda x: os.path.basename(x),
             score_cutoff=70,
         )
 
-        if matchedMedia:
+        if matched_media:
             if typer.confirm(
-                f"Matched folder {os.path.basename(path)} to movie {matchedMedia[0]} [{matchedMedia[1]}], proceed?"
+                f"Matched folder {os.path.basename(path)} to movie {matched_media[0]} [{matched_media[1]}], proceed?"
             ):
-                newPath = os.path.join(os.path.dirname(path), matchedMedia[0])
-                if os.path.isdir(newPath):
+                new_path = os.path.join(os.path.dirname(path), matched_media[0])
+                if os.path.isdir(new_path):
                     console.print(
-                        f"[bold red]Error: Target directory {newPath} already exists. Skipping rename.[/bold red]"
+                        f"[bold red]Error: Target directory {new_path} already exists. Skipping rename.[/bold red]"
                     )
                 else:
-                    os.rename(path, newPath)
+                    os.rename(path, new_path)
                     console.print(
-                        f"[green]Renamed {os.path.basename(path)} to {matchedMedia[0]}[/green]"
+                        f"[green]Renamed {os.path.basename(path)} to {matched_media[0]}[/green]"
                     )
         else:
             console.print(
@@ -734,7 +734,7 @@ def delete_file(directory, prefix, prompt: Boolean):
         prompt (bool): If True, ask for user confirmation before deleting.
     """
     for s in os.listdir(directory):
-        filePath = os.path.join(directory, s)
-        if os.path.splitext(s)[0] == prefix and os.path.isfile(filePath):
-            if not prompt or typer.confirm(f"Delete {filePath}?"):
-                os.remove(filePath)
+        file_path = os.path.join(directory, s)
+        if os.path.splitext(s)[0] == prefix and os.path.isfile(file_path):
+            if not prompt or typer.confirm(f"Delete {file_path}?"):
+                os.remove(file_path)

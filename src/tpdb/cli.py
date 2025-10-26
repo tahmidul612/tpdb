@@ -25,10 +25,10 @@ def download(
     url: str = typer.Argument(..., help="URL of the poster to download"),
 ):
     """Download a poster from ThePosterDB."""
-    from tpdb.main import downloadPoster
+    from tpdb.main import download_poster
 
     console.print(f"[bold cyan]Downloading poster from:[/bold cyan] {url}")
-    downloadPoster(url)
+    download_poster(url)
     console.print("[bold green]Download complete![/bold green]")
 
 
@@ -101,20 +101,20 @@ def main_callback(
         LibraryData,
         Posters,
         update_config,
-        findPosters,
-        moviePoster,
-        organizeMovieFolder,
-        organizeShowFolder,
-        processZipFile,
-        syncMovieFolder,
-        copyPosters,
+        find_posters,
+        movie_poster,
+        organize_movie_folder,
+        organize_show_folder,
+        process_zip_file,
+        sync_movie_folder,
+        copy_posters,
         check_file,
-        downloadPoster,
+        download_poster,
     )
 
     # Handle download (if specified, download first but continue processing)
     if download_url:
-        downloadPoster(download_url)
+        download_poster(download_url)
 
     # Get Plex configuration
     plex_url = ""
@@ -195,7 +195,7 @@ def main_callback(
             # Get all media folders in the library
             for path in selected_library.locations:
                 for name in os.listdir(path):
-                    poster_data.mediaFolderNames[name].append(path)
+                    poster_data.media_folder_names[name].append(path)
 
             # Get poster root directories for the library
             poster_root_dirs = [
@@ -203,33 +203,33 @@ def main_callback(
                 for path in os.listdir(POSTER_DIR)
                 if fuzz.partial_ratio(selected_library.title, path) > 70
             ]
-            findPosters(poster_root_dirs)
+            find_posters(poster_root_dirs)
 
             if filter_str:
                 folder_and_score = [
                     e
                     for e in process.extractBests(
                         filter_str,
-                        poster_data.posterFolders,
+                        poster_data.poster_folders,
                         scorer=fuzz.token_set_ratio,
                         score_cutoff=50,
                     )
                 ]
                 if 100 in [s[1] for s in folder_and_score]:
-                    poster_data.posterFolders = [
+                    poster_data.poster_folders = [
                         f[0] for f in folder_and_score if f[1] == 100
                     ]
                 else:
-                    poster_data.posterFolders = [f[0] for f in folder_and_score]
+                    poster_data.poster_folders = [f[0] for f in folder_and_score]
                 console.print(
-                    f"[bold]Filtered poster folders:[/bold]\n{poster_data.posterFolders}"
+                    f"[bold]Filtered poster folders:[/bold]\n{poster_data.poster_folders}"
                 )
 
             match selected_library.type:
                 case "movie":
                     if unlinked:
                         movie_poster_folders = []
-                        for folder in poster_data.posterFolders:
+                        for folder in poster_data.poster_folders:
                             movie_poster_folders.extend(
                                 [
                                     os.path.join(folder, name)
@@ -251,7 +251,7 @@ def main_callback(
                                     m in os.path.basename(movie)
                                     for m in [
                                         "Collection",
-                                        *poster_data.mediaFolderNames.keys(),
+                                        *poster_data.media_folder_names.keys(),
                                     ]
                                 )
                                 and "Custom" not in movie
@@ -261,12 +261,12 @@ def main_callback(
                             f"{len(unlinked_folders)} unlinked folders found. Start processing them?"
                         ):
                             for folder in unlinked_folders:
-                                syncMovieFolder(folder)
+                                sync_movie_folder(folder)
                     elif action == "new":
-                        moviePoster()
-                        processZipFile(selected_library)
+                        movie_poster()
+                        process_zip_file(selected_library)
                     elif action == "sync":
-                        for folder in poster_data.posterFolders:
+                        for folder in poster_data.poster_folders:
                             poster_exists = any(
                                 os.path.isfile(os.path.join(folder, x))
                                 for x in os.listdir(folder)
@@ -275,23 +275,23 @@ def main_callback(
                                 replace_all
                                 or typer.confirm(f'Process folder "{folder}"?')
                             ):
-                                organizeMovieFolder(folder)
+                                organize_movie_folder(folder)
                 case "show":
                     if action == "new":
-                        processZipFile(selected_library)
+                        process_zip_file(selected_library)
                     elif action == "sync":
                         unorganized_poster_folders = [
                             folder
-                            for folder in poster_data.posterFolders
+                            for folder in poster_data.poster_folders
                             if not check_file(folder, "poster")
                         ]
                         for folder in unorganized_poster_folders:
-                            organizeShowFolder(folder)
+                            organize_show_folder(folder)
 
             # Move posters to media folders
             if copy:
-                for folder in poster_data.posterFolders:
-                    copyPosters(folder)
+                for folder in poster_data.poster_folders:
+                    copy_posters(folder)
         else:
             console.print("[bold yellow]Library type not setup yet[/bold yellow]")
 

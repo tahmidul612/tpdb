@@ -774,8 +774,8 @@ def sync_movie_folder(path):
         )
 
         if matched_media:
-            if typer.confirm(
-                f"Matched folder {os.path.basename(path)} to movie {matched_media[0]} [{matched_media[1]}], proceed?"
+            if prompt_match_confirmation(
+                os.path.basename(path), matched_media[0], matched_media[1], "folder"
             ):
                 new_path = os.path.join(os.path.dirname(path), matched_media[0])
                 if os.path.isdir(new_path):

@@ -5,11 +5,13 @@ from typing import List
 from thefuzz import fuzz, process
 import argparse
 import logging
+
 # Suppress empty string warnings from thefuzz
 logging.getLogger("thefuzz").setLevel(logging.ERROR)
 
 # List of OS/garbage directories to ignore
-IGNORE_DIR = ['__MACOSX']
+IGNORE_DIR = ["__MACOSX"]
+
 
 def main():
     """
@@ -21,20 +23,25 @@ def main():
     up a poster directory and finding redundant entries.
     """
     parser = argparse.ArgumentParser(
-        "Find duplicate posters", formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('dir', default='/data/Posters', nargs='?',
-                        help="The root directory to search for duplicate posters.")
+        "Find duplicate posters", formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "dir",
+        default="/data/Posters",
+        nargs="?",
+        help="The root directory to search for duplicate posters.",
+    )
     opts = parser.parse_args()
-    
+
     dir_list = subdirs(opts.dir)
     if not dir_list or len(dir_list) < 2:
-        print(f'There must be >=2 subdirectories in {opts.dir} to find duplicates.')
+        print(f"There must be >=2 subdirectories in {opts.dir} to find duplicates.")
         exit(1)
 
     max_depth = max(dir_list, key=lambda x: x[1])[1]
 
     for depth in range(0, max_depth + 1):
-        print(f'Checking for duplicates at level {depth}...')
+        print(f"Checking for duplicates at level {depth}...")
         # Get all directories at the current depth
         current_level_dirs = [d[0] for d in dir_list if d[1] == depth]
 
@@ -53,23 +60,27 @@ def main():
                     basename(d),
                     [basename(x) for x in match_list],
                     scorer=fuzz.token_set_ratio,
-                    score_cutoff=74
+                    score_cutoff=74,
                 )
             except Exception:
                 continue
 
             if result:
                 # Find the full path of the matched directory
-                original_match_path = next((p for p in match_list if basename(p) == result[0]), None)
+                original_match_path = next(
+                    (p for p in match_list if basename(p) == result[0]), None
+                )
                 if original_match_path:
                     out = (d, original_match_path, result[1])
-                    print(f'\t- Potential duplicate: {out[0]}  <-->  {out[1]} (Score: {out[2]})')
+                    print(
+                        f"\t- Potential duplicate: {out[0]}  <-->  {out[1]} (Score: {out[2]})"
+                    )
                     found_duplicates = True
 
-            match_list.append(d) # Add it back for the next iteration
+            match_list.append(d)  # Add it back for the next iteration
 
         if not found_duplicates:
-            print(f'\t- No duplicates found at level {depth}.')
+            print(f"\t- No duplicates found at level {depth}.")
 
 
 def subdirs(directory: str) -> List[tuple[str, int]]:
@@ -85,7 +96,7 @@ def subdirs(directory: str) -> List[tuple[str, int]]:
     """
     dir_list = []
     if not os.path.isdir(directory):
-        print(f'Error: Directory {directory} does not exist.')
+        print(f"Error: Directory {directory} does not exist.")
         exit(1)
 
     for d in os.walk(directory):
@@ -97,5 +108,5 @@ def subdirs(directory: str) -> List[tuple[str, int]]:
     return dir_list
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

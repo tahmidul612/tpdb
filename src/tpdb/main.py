@@ -11,9 +11,8 @@ from xmlrpc.client import Boolean
 
 import pyrfc6266
 import requests
-from plexapi.server import CONFIG, PlexServer
 from rich.console import Console
-from rich.progress import Progress, DownloadColumn, TransferSpeedColumn
+from rich.progress import Progress
 from thefuzz import fuzz, process
 
 # Initialize Rich console

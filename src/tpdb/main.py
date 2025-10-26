@@ -328,10 +328,9 @@ def organize_movie_folder(folder_dir):
                 user_in = "f"
             else:
                 if matched_media:
-                    user_in = typer.prompt(
-                        f"Matched poster file {file} to movie {matched_media[0]}, proceed? (y/n/f)",
-                        default="y",
-                    ).lower()
+                    user_in = prompt_poster_organization(
+                        file, matched_media[0], matched_media[1]
+                    )
                 else:
                     user_in = None
             # Choosing option 'f' follows the force renaming logic for the movie folder/poster

@@ -20,6 +20,103 @@ from thefuzz import fuzz, process
 console = Console()
 
 
+# Helper functions for user prompts
+def prompt_match_confirmation(
+    source_name: str,
+    match_name: str,
+    match_score: int | float,
+    media_type: str = "item",
+) -> bool:
+    """Display a nicely formatted match confirmation prompt.
+    
+    Args:
+        source_name: The source file/folder name
+        match_name: The matched media name
+        match_score: The fuzzy match score (0-100)
+        media_type: Type of media (movie, show, folder, etc.)
+    
+    Returns:
+        bool: True if user confirms, False otherwise
+    """
+    # Determine score color
+    if match_score >= 90:
+        score_color = "green"
+    elif match_score >= 70:
+        score_color = "yellow"
+    else:
+        score_color = "red"
+    
+    console.print()
+    console.print(f"[bold cyan]Match Found for {media_type.title()}[/bold cyan]")
+    console.print(f"  Source:  [dim]{source_name}[/dim]")
+    console.print(f"  Match:   [bold]{match_name}[/bold]")
+    console.print(f"  Score:   [{score_color}]{match_score}/100[/{score_color}]")
+    console.print()
+    
+    return typer.confirm("Proceed with this match?", default=True)
+
+
+def prompt_collection_organization(source_name: str, best_match: str | None, score: int | float) -> bool:
+    """Display prompt for organizing collection/set folders.
+    
+    Args:
+        source_name: The collection/set name
+        best_match: Best match found (if any)
+        score: Match score
+    
+    Returns:
+        bool: True if user wants to proceed
+    """
+    console.print()
+    console.print("[bold cyan]Collection Detected[/bold cyan]")
+    console.print(f"  File:    [dim]{source_name}[/dim]")
+    
+    if best_match:
+        console.print(f"  Match:   [yellow]{best_match}[/yellow] (low score: {score})")
+        console.print()
+        console.print("[dim]This appears to be a collection/set with multiple movies.[/dim]")
+        return typer.confirm("Unzip and organize movies individually?", default=True)
+    else:
+        console.print("  Match:   [red]No match found[/red]")
+        console.print()
+        console.print("[dim]This appears to be a collection/set with multiple movies.[/dim]")
+        return typer.confirm("Unzip and organize movies individually?", default=True)
+
+
+def prompt_poster_organization(
+    file_name: str,
+    match_name: str,
+    match_score: int | float,
+) -> str:
+    """Display prompt for organizing individual poster files with match/force/skip options.
+    
+    Args:
+        file_name: The poster file name
+        match_name: The matched movie name
+        match_score: The fuzzy match score (0-100)
+    
+    Returns:
+        str: 'y' to use match, 'f' to force rename, 'n' to skip
+    """
+    # Determine score color
+    if match_score >= 90:
+        score_color = "green"
+    elif match_score >= 70:
+        score_color = "yellow"
+    else:
+        score_color = "red"
+    
+    console.print()
+    console.print("[bold cyan]Poster Match[/bold cyan]")
+    console.print(f"  File:    [dim]{file_name}[/dim]")
+    console.print(f"  Match:   [bold]{match_name}[/bold]")
+    console.print(f"  Score:   [{score_color}]{match_score:.0f}/100[/{score_color}]")
+    console.print()
+    console.print("[dim]Options: (y) use match, (f) force rename, (n) skip[/dim]")
+    
+    return typer.prompt("Choose", default="y").lower()
+
+
 # Data classes
 class LibraryData:
     """A data class to hold information about a Plex library.

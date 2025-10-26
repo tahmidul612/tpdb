@@ -6,6 +6,7 @@ This tool is perfect for users who want to maintain a clean and organized poster
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Key Features](#key-features)
 - [Installation](#installation)
 - [Setup](#setup)
@@ -28,15 +29,18 @@ This tool is perfect for users who want to maintain a clean and organized poster
 
 To get started with the Plex Poster Organizer, follow these steps:
 
-1.  **Clone this repository:**
-    ```console
-    git clone https://github.com/tahmidul612/tpdb.git
-    cd tpdb
-    ```
-2.  **Install dependencies:**
-    ```console
-    pip install -r requirements.txt
-    ```
+1. **Clone this repository:**
+
+   ```console
+   git clone https://github.com/tahmidul612/tpdb.git
+   cd tpdb
+   ```
+
+1. **Install dependencies:**
+
+   ```console
+   pip install -r requirements.txt
+   ```
 
 ## Setup
 
@@ -46,8 +50,8 @@ The script needs to connect to your Plex server to fetch your library informatio
 
 When you run `tpdb.py` for the first time, it will prompt you to enter your Plex URL and an authentication token.
 
--   **Plex URL**: The address of your Plex server (e.g., `http://192.168.1.100:32400`).
--   **Plex Token**: You can find your token by following [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
+- **Plex URL**: The address of your Plex server (e.g., `http://192.168.1.100:32400`).
+- **Plex Token**: You can find your token by following [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
 
 If you choose to save the configuration, the script will create a `config.ini` file at `~/.config/plexapi/config.ini` with your credentials. This avoids the need to enter them every time you run the script.
 
@@ -72,35 +76,44 @@ Here are the available command-line arguments for `tpdb.py`:
 
 ### Examples
 
--   **Download a poster set from TPDb:**
-    ```console
-    python tpdb.py -d "https://theposterdb.com/set/12345"
-    ```
--   **Organize new posters for your 'Movies' library:**
-    This will process new zip files and loose poster files, matching them to your movies.
-    ```console
-    python tpdb.py -l Movies --action new
-    ```
--   **Sync existing show posters and copy them to media folders:**
-    This will organize existing TV show poster folders and then hardlink them to your TV show media directories.
-    ```console
-    python tpdb.py -l "TV Shows" --action sync --copy
-    ```
--   **Find and fix unlinked movie posters:**
-    This will scan for poster folders that don't match any movie in your library and prompt you to fix them.
-    ```console
-    python tpdb.py -l Movies --unlinked
-    ```
+- **Download a poster set from TPDb:**
+
+  ```console
+  python tpdb.py -d "https://theposterdb.com/set/12345"
+  ```
+
+- **Organize new posters for your 'Movies' library:**
+  This will process new zip files and loose poster files, matching them to your movies.
+
+  ```console
+  python tpdb.py -l Movies --action new
+  ```
+
+- **Sync existing show posters and copy them to media folders:**
+  This will organize existing TV show poster folders and then hardlink them to your TV show media directories.
+
+  ```console
+  python tpdb.py -l "TV Shows" --action sync --copy
+  ```
+
+- **Find and fix unlinked movie posters:**
+  This will scan for poster folders that don't match any movie in your library and prompt you to fix them.
+
+  ```console
+  python tpdb.py -l Movies --unlinked
+  ```
 
 ## Finding Duplicates (`duplicates.py`)
 
 This repository includes a helpful utility, `duplicates.py`, to find potential duplicate poster folders within your collection. This is useful for cleaning up your poster directory.
 
--   **To run the script:**
-    ```console
-    python duplicates.py /path/to/your/posters
-    ```
-    If you don't provide a path, it defaults to `/data/Posters`.
+- **To run the script:**
+
+  ```console
+  python duplicates.py /path/to/your/posters
+  ```
+
+  If you don't provide a path, it defaults to `/data/Posters`.
 
 The script will scan the directory and print a list of potential duplicates based on name similarity, which you can then review and manage manually.
 
@@ -108,7 +121,7 @@ The script will scan the directory and print a list of potential duplicates base
 
 Here is an example of what your poster directory might look like after being organized by this tool. This structure is ideal for use with Kometa.
 
-```
+```text
 /data/Posters/
 ├── Movies/
 │   ├── The Matrix (1999)/

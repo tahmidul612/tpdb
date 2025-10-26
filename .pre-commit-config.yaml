@@ -1,0 +1,58 @@
+default_stages:
+  - pre-commit
+repos:
+  # Handle dependency management with proper sequencing
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.0
+    hooks:
+      - id: uv-lock
+        # Only run when pyproject.toml changes
+        files: ^pyproject\.toml$
+      - id: uv-export
+        # Export requirements.txt when dependencies change
+        files: ^(pyproject\.toml|uv\.lock)$
+        args: ["--output-file", "requirements.txt"]
+  # Then run other quality checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # Exclude generated files that might have trailing whitespace by design
+        exclude: ^(uv\.lock|requirements\.txt)$
+      - id: check-illegal-windows-names
+      - args:
+          - --fix=lf
+        id: mixed-line-ending
+        # Exclude binary or generated files
+        exclude: ^(uv\.lock)$
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - args:
+          - --fix
+          - --unsafe-fixes
+          - --exit-non-zero-on-fix
+        id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.22
+    hooks:
+      - additional_dependencies:
+          - mdformat-ruff
+        id: mdformat
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.9.1
+    hooks:
+      - id: commitizen
+        stages:
+          - commit-msg
+      - id: commitizen-branch
+        stages:
+          - pre-push
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline', '--only-verified']
+        # Exclude generated files that may contain false positives
+        exclude: ^(uv\.lock|requirements\.txt)$

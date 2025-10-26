@@ -198,17 +198,16 @@ def downloadPoster(url):
 
 
 def organizeMovieFolder(folderDir):
-    """Organizes movie posters in a given folder.
+    """Organizes a folder of movie posters.
 
-    This function iterates through files in a directory, matches them to movies
-    in the Plex library using fuzzy string matching, and then renames and moves
-    them into a subfolder named after the movie. This is intended to be used
-    for individual movie posters.
+    Renames poster files and creates a subfolder named after each movie,
+    placing the renamed poster inside. Automatically organizes all posters that have an
+    exact or strong fuzzy match to a media folder.
 
     Args:
-        folderDir (str): The directory path containing the movie poster files.
+        folderDir (str): The path to the folder containing the movie posters.
     """
-    global poster_data
+    global poster_data, opts
     for file in os.listdir(folderDir):
         sourceFile = os.path.join(folderDir, file)
         collection = False
@@ -239,7 +238,7 @@ def organizeMovieFolder(folderDir):
                 fileName = (
                     os.path.splitext(os.path.basename(file))[0]
                     if (opts.force or user_in == "f" or collection)
-                    else matchedMedia[0]
+                    else matchedMedia[0]  # type: ignore[index]
                 )
                 fileExtension = os.path.splitext(file)[1]
                 newFolder = os.path.join(folderDir, fileName)
@@ -356,16 +355,14 @@ def findPosters(posterRootDirs):
 
 
 def copyPosters(posterFolder):
-    """Copies organized posters to the corresponding media folders.
+    """Copies posters from a poster folder to the corresponding Plex media folders.
 
-    This function creates hard links from the organized poster folders to the
-    actual media folders in the Plex library. This is useful for users who
-    want to have the posters directly in their media folders for Plex to use.
+    Creates hard links from the poster folder to each media folder location.
 
     Args:
         posterFolder (str): The path to the organized poster folder.
     """
-    global poster_data
+    global poster_data, opts
     mediaFolders = poster_data.mediaFolderNames.get(os.path.basename(posterFolder))
     if mediaFolders:
         mediaName = os.path.basename(posterFolder)
@@ -566,6 +563,8 @@ def processZipFile(selectedLibrary):
     global poster_data
     for posterZip in poster_data.posterZipFiles.keys():
         sourceZip = poster_data.posterZipFiles.get(posterZip)
+        if not sourceZip:
+            continue
         destinationDir = ""
         unzip = ""
         if selectedLibrary and selectedLibrary.type == "show":
@@ -615,8 +614,8 @@ def processZipFile(selectedLibrary):
                     if os.path.isdir(destinationDir):
                         shutil.rmtree(destinationDir)
                     zip_ref.extractall(destinationDir)
-                except:
-                    print("Something went wrong extracting the zip")
+                except Exception as e:
+                    print(f"Something went wrong extracting the zip: {e}")
                 else:
                     if selectedLibrary and selectedLibrary.type == "show":
                         organizeShowFolder(destinationDir)

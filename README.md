@@ -1,6 +1,6 @@
 # Plex Poster Organizer & Utility
 
-Plex Poster Organizer is a powerful Python utility designed to streamline the management of movie and TV show posters for your Plex media server. It helps you download, organize, and sync posters from The Poster DB (TPDb), preparing them for use with metadata managers like [Kometa](https://kometa.wiki/) (formerly Plex Meta Manager) or for direct use within your media library.
+Plex Poster Organizer is a powerful Python utility designed to streamline the management of movie and TV show posters for your Plex media server. It helps you download, organize, and sync posters from ThePosterDB (TPDb), preparing them for use with metadata managers like [Kometa](https://kometa.wiki/) (formerly Plex Meta Manager) or for direct use within your media library.
 
 This tool is perfect for users who want to maintain a clean and organized poster collection, ensuring that their custom artwork is correctly named and structured for Plex and third-party tools.
 
@@ -84,7 +84,7 @@ Here are the available command-line arguments for `tpdb`:
 ### Available Commands
 
 - `tpdb` - Main poster organization (with options above)
-- `tpdb download <url>` - Download a poster from The Poster DB
+- `tpdb download <url>` - Download a poster from ThePosterDB
 - `tpdb find-dupes [directory]` - Find duplicate poster folders
 
 ### Examples

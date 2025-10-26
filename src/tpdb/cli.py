@@ -178,17 +178,18 @@ def main_callback(
         # We need to inject the options and poster_data into the module
         import tpdb.main as main_module
 
-        # Create a fake opts object
-        class Opts:
-            def __init__(self):
-                self.force = force
-                self.all = replace_all
-                self.copy = copy
-                self.unlinked = unlinked
-                self.action = action
-                self.filter = filter_str
+        # Create opts object using the Options class from main
+        from tpdb.main import Options
 
-        main_module.opts = Opts()
+        opts_obj = Options()
+        opts_obj.force = force
+        opts_obj.all = replace_all
+        opts_obj.copy = copy
+        opts_obj.unlinked = unlinked
+        opts_obj.action = action
+        opts_obj.filter = filter_str
+
+        main_module.opts = opts_obj
         main_module.poster_data = poster_data
 
         if selected_library.type in ["movie", "show"]:

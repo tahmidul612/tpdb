@@ -670,8 +670,8 @@ def process_zip_file(selected_library):
                 destination_dir = os.path.join(os.path.dirname(source_zip), best_match)
                 unzip = (
                     "y"
-                    if typer.confirm(
-                        f"Matched zip file {os.path.basename(source_zip)} to show {best_match} [score: {best_score}], proceed?"
+                    if prompt_match_confirmation(
+                        os.path.basename(source_zip), best_match, best_score, "show"
                     )
                     else "n"
                 )
@@ -688,8 +688,8 @@ def process_zip_file(selected_library):
                 destination_dir = os.path.join(os.path.dirname(source_zip), best_match)
                 unzip = (
                     "y"
-                    if typer.confirm(
-                        f"Matched zip file {os.path.basename(source_zip)} to movie {best_match} [score: {best_score}], proceed?"
+                    if prompt_match_confirmation(
+                        os.path.basename(source_zip), best_match, best_score, "movie"
                     )
                     else "n"
                 )
@@ -699,22 +699,13 @@ def process_zip_file(selected_library):
                     os.path.dirname(source_zip),
                     os.path.splitext(os.path.basename(source_zip))[0],
                 )
-                if best_match:
-                    unzip = (
-                        "y"
-                        if typer.confirm(
-                            f"Low match score ({best_score}) for {os.path.basename(source_zip)} to {best_match}. Unzip as collection and organize individually?"
-                        )
-                        else "n"
+                unzip = (
+                    "y"
+                    if prompt_collection_organization(
+                        os.path.basename(source_zip), best_match, best_score
                     )
-                else:
-                    unzip = (
-                        "y"
-                        if typer.confirm(
-                            f"No direct match found for {os.path.basename(source_zip)}. Unzip as collection and organize individually?"
-                        )
-                        else "n"
-                    )
+                    else "n"
+                )
         if unzip == "y":
             with zipfile.ZipFile(source_zip, "r") as zip_ref:
                 try:
@@ -742,7 +733,7 @@ def process_zip_file(selected_library):
                                 f"\n[cyan]Processing collection folder: {os.path.basename(destination_dir)}[/cyan]"
                             )
                             organize_movie_collection_folder(destination_dir)
-                    if typer.confirm("Move zip file to archive folder?"):
+                    if typer.confirm("Move zip file to archive folder?", default=True):
                         if os.path.isfile(
                             os.path.join(
                                 POSTER_DIR, "Archives", os.path.basename(source_zip)

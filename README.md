@@ -1,171 +1,513 @@
-# Plex Poster Organizer & Utility
+# TPDB - Plex Poster Organizer
 
-Plex Poster Organizer is a powerful Python utility designed to streamline the management of movie and TV show posters for your Plex media server. It helps you download, organize, and sync posters from ThePosterDB (TPDb), preparing them for use with metadata managers like [Kometa](https://kometa.wiki/) (formerly Plex Meta Manager) or for direct use within your media library.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.1-green.svg)
 
-This tool is perfect for users who want to maintain a clean and organized poster collection, ensuring that their custom artwork is correctly named and structured for Plex and third-party tools.
+**TPDB** is a powerful Python utility that streamlines the management of movie and TV show posters for your Plex media server. Download, organize, and sync custom artwork from ThePosterDB with intelligent fuzzy matching and automated folder organization.
+
+Perfect for Plex enthusiasts using metadata managers like [Kometa](https://kometa.wiki/) (formerly Plex Meta Manager) or managing posters directly in your media library.
+
+---
+
+<!-- Placeholder for demo GIF showing the tool in action -->
+![Demo of TPDB organizing posters](docs/images/demo.gif)
+*TPDB in action - downloading and organizing posters automatically*
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [Key Features](#key-features)
-- [Installation](#installation)
-- [Setup](#setup)
-  - [Plex Configuration](#plex-configuration)
-- [Usage](#usage)
-  - [Command-Line Arguments](#command-line-arguments)
-  - [Examples](#examples)
-- [Finding Duplicates](#finding-duplicates)
-- [Example Poster Directory Structure](#example-poster-directory-structure)
+- [TPDB - Plex Poster Organizer](#tpdb---plex-poster-organizer)
+  - [Table of Contents](#table-of-contents)
+  - [Why TPDB?](#why-tpdb)
+  - [Key Features](#key-features)
+  - [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+    - [Quick Install](#quick-install)
+  - [Configuration](#configuration)
+    - [Plex Server Setup](#plex-server-setup)
+  - [Quick Start](#quick-start)
+  - [Usage](#usage)
+    - [Main Command](#main-command)
+    - [Download Command](#download-command)
+    - [Duplicate Detection](#duplicate-detection)
+    - [Command-Line Options](#command-line-options)
+  - [Common Workflows](#common-workflows)
+  - [Directory Structure](#directory-structure)
+  - [How It Works](#how-it-works)
+  - [Troubleshooting](#troubleshooting)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgments](#acknowledgments)
+
+## Why TPDB?
+
+Managing custom posters for a large Plex library can be tedious and time-consuming. TPDB automates the entire workflow:
+
+- **No more manual renaming** - Intelligent fuzzy matching automatically associates posters with your media
+- **Batch processing** - Handle entire poster sets and collections at once
+- **Kometa-ready** - Organized folder structure works seamlessly with Kometa's poster management
+- **Interactive & Smart** - Confirms matches when uncertain, learns from your corrections
+- **Beautiful CLI** - Modern interface with progress bars, colors, and clear prompts
 
 ## Key Features
 
-- **Download Posters**: Fetch posters directly from TPDb URLs, including sets and individual files.
-- **Organize Media**: Automatically match posters to your Plex library and organize them into a clean, nested folder structure.
-- **Handle Collections**: Process poster sets for movie collections, organizing each poster into a subfolder for the corresponding movie.
-- **Sync with Plex**: Hardlink organized posters directly into your media folders for Plex to use.
-- **Find Duplicates**: Identify and clean up potential duplicate poster folders.
-- **Modern CLI**: Built with typer and rich for a beautiful, user-friendly command-line experience.
+### 🎨 Smart Poster Management
+
+- **Fuzzy Matching**: Automatically matches posters to your Plex media using intelligent name normalization
+- **Collection Handling**: Organizes movie collection posters into structured subfolders
+- **TV Season Support**: Proper naming for TV show seasons with zero-padded formatting (Season01, Season02, etc.)
+
+### 📥 Download & Extract
+
+- **Direct Downloads**: Fetch posters and sets from ThePosterDB URLs
+- **ZIP Processing**: Automatically extracts and organizes poster archives
+- **Progress Tracking**: Beautiful progress bars for downloads and batch operations
+
+### 🔄 Sync & Link
+
+- **Hard Linking**: Create hard links from organized posters to your media folders
+- **Sync Mode**: Update existing poster folders with new artwork
+- **Unlinked Detection**: Find and fix orphaned poster folders
+
+### 🔍 Duplicate Detection
+
+- **Fuzzy Search**: Identify potential duplicate poster folders
+- **Threshold-based**: Configurable similarity matching (74%+ by default)
+- **Clean Output**: Color-coded results with similarity scores
+
+### 💎 User Experience
+
+- **Interactive Prompts**: Typer-based CLI with intuitive confirmation dialogs
+- **Rich Formatting**: Color-coded output, formatted tables, and clear status messages
+- **Flexible Filtering**: Process specific libraries, folders, or media types
 
 ## Installation
 
-To get started with the Plex Poster Organizer, follow these steps:
+### Prerequisites
 
-1. **Clone this repository:**
+- **Python 3.10 or higher** - Check your version with `python --version`
+- **Plex Media Server** - Running and accessible on your network
+- **ThePosterDB Account** (optional) - For downloading premium content
 
-   ```console
+### Quick Install
+
+1. **Clone the repository:**
+
+   ```bash
    git clone https://github.com/tahmidul612/tpdb.git
    cd tpdb
    ```
 
-1. **Install the package:**
+2. **Install using pip:**
 
-   ```console
+   ```bash
+   # For regular use
    pip install -e .
-   ```
 
-   Or if you're developing:
-
-   ```console
+   # For development (includes testing and linting tools)
    pip install -e .[dev]
    ```
 
-## Setup
+   Or using **uv** (recommended for faster installation):
 
-### Plex Configuration
+   ```bash
+   # Install uv first (if not already installed)
+   curl -LsSf https://astral.sh/uv/install.sh | sh
 
-The script needs to connect to your Plex server to fetch your library information for matching posters to media.
+   # Install dependencies
+   uv sync
 
-When you run `tpdb` for the first time, it will prompt you to enter your Plex URL and an authentication token.
+   # For development
+   uv sync --group dev
+   ```
 
-- **Plex URL**: The address of your Plex server (e.g., `http://192.168.1.100:32400`).
-- **Plex Token**: You can find your token by following [Plex's official guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
+3. **Verify installation:**
 
-If you choose to save the configuration, the script will create a `config.ini` file at `~/.config/plexapi/config.ini` with your credentials. This avoids the need to enter them every time you run the script.
+   ```bash
+   tpdb --help
+   ```
+
+   You should see the TPDB help menu with available commands and options.
+
+## Configuration
+
+### Plex Server Setup
+
+TPDB needs to connect to your Plex server to access library information for intelligent poster matching.
+
+**First-time setup:**
+
+When you run `tpdb` for the first time, you'll be prompted to enter:
+
+1. **Plex Server URL**: Your server address (e.g., `http://192.168.1.100:32400`)
+2. **Authentication Token**: Your Plex token ([how to find it](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
+
+**Saving configuration:**
+
+If you choose to save these credentials, TPDB creates a configuration file at:
+
+```
+~/.config/plexapi/config.ini
+```
+
+This eliminates the need to re-enter credentials on subsequent runs.
+
+**Manual configuration:**
+
+You can also manually create the configuration file:
+
+```ini
+[auth]
+server_baseurl = http://your-server:32400
+server_token = your_plex_token_here
+```
+
+<!-- Placeholder for configuration screenshot -->
+![Plex configuration prompt](docs/images/config-setup.png)
+*First-time configuration - entering Plex server details*
+
+## Quick Start
+
+Get started with TPDB in just a few commands:
+
+```bash
+# Download a poster set from ThePosterDB
+tpdb download "https://theposterdb.com/set/12345"
+
+# Organize new posters for your Movies library
+tpdb -l Movies --action new
+
+# Sync existing TV show posters and link them to media folders
+tpdb -l "TV Shows" --action sync --copy
+```
+
+<!-- Placeholder for quick start demo -->
+![Quick start example](docs/images/quickstart.gif)
+*Download, organize, and sync posters in minutes*
 
 ## Usage
 
-The main command-line tool is `tpdb`. It offers a range of options to customize its behavior.
+### Main Command
 
-### Command-Line Arguments
+The `tpdb` command processes posters for your Plex libraries with various options:
 
-Here are the available command-line arguments for `tpdb`:
+```bash
+tpdb [OPTIONS]
+```
 
-| Argument | Short | Description |
-| :--- | :--- | :--- |
-| `--libraries <names>` | `-l` | Specify the Plex libraries to process (e.g., `Movies`, `TV Shows`). Defaults to all. |
-| `--action <type>` | | The action to perform. `new` (default) organizes new posters and zip files. `sync` organizes existing folders. |
-| `--unlinked` | `-u` | Find and process poster folders that are not yet linked to a media item. |
-| `--force` | `-f` | Force rename movie posters without matching them to a media folder. |
-| `--filter <string>` | | Filter the source poster folders to process based on a string match. |
-| `--all` | `-a` | Replace all poster files in a media folder without prompting for confirmation. |
-| `--copy` | `-c` | Hardlink the organized posters to your media folders for Plex to use directly. |
-| `--download <url>` | `-d` | Download a poster from a TPDb URL. |
+**Basic examples:**
 
-### Available Commands
+```bash
+# Process all libraries interactively
+tpdb
 
-- `tpdb` - Main poster organization (with options above)
-- `tpdb download <url>` - Download a poster from ThePosterDB
-- `tpdb find-dupes [directory]` - Find duplicate poster folders
+# Process specific library
+tpdb -l Movies
 
-### Examples
+# Process multiple libraries
+tpdb -l Movies -l "TV Shows"
 
-- **Download a poster set from TPDb:**
+# Auto-replace all posters without prompting
+tpdb -l Movies --all
 
-  ```console
-  tpdb download "https://theposterdb.com/set/12345"
-  ```
+# Create hard links to media folders
+tpdb -l Movies --copy
+```
 
-  Or using the `-d` flag:
+### Download Command
 
-  ```console
-  tpdb -d "https://theposterdb.com/set/12345"
-  ```
+Download posters directly from ThePosterDB:
 
-- **Organize new posters for your 'Movies' library:**
-  This will process new zip files and loose poster files, matching them to your movies.
+```bash
+# Using the download subcommand
+tpdb download "https://theposterdb.com/set/12345"
 
-  ```console
-  tpdb -l Movies --action new
-  ```
+# Using the -d flag (allows continued processing)
+tpdb -d "https://theposterdb.com/set/12345" -l Movies --action new
+```
 
-- **Sync existing show posters and copy them to media folders:**
-  This will organize existing TV show poster folders and then hardlink them to your TV show media directories.
+The downloaded files are automatically saved to your poster directory and can be immediately organized.
 
-  ```console
-  tpdb -l "TV Shows" --action sync --copy
-  ```
+### Duplicate Detection
 
-- **Find and fix unlinked movie posters:**
-  This will scan for poster folders that don't match any movie in your library and prompt you to fix them.
+Find and identify duplicate poster folders:
 
-  ```console
-  tpdb -l Movies --unlinked
-  ```
+```bash
+# Search default directory (/data/Posters)
+tpdb find-dupes
 
-- **Find duplicate poster folders:**
-  This will scan your poster directory for potential duplicates.
+# Search specific directory
+tpdb find-dupes /path/to/your/posters
+```
 
-  ```console
-  tpdb find-dupes /path/to/your/posters
-  ```
+Output shows potential duplicates with similarity scores to help you clean up redundant folders.
 
-## Finding Duplicates
+### Command-Line Options
 
-The `find-dupes` command helps you identify potential duplicate poster folders within your collection. This is useful for cleaning up your poster directory.
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--libraries <names>` | `-l` | Specify Plex libraries to process | All libraries |
+| `--action <new\|sync>` | | Process new posters or sync existing folders | `new` |
+| `--unlinked` | `-u` | Find and process unlinked poster folders | `false` |
+| `--force` | `-f` | Force rename without matching to media | `false` |
+| `--filter <string>` | | Filter source folders by string match | None |
+| `--all` | `-a` | Replace all posters without prompting | `false` |
+| `--copy` | `-c` | Hard link posters to media folders | `false` |
+| `--download <url>` | `-d` | Download from ThePosterDB before processing | None |
 
-- **To run the command:**
+**Action Modes:**
 
-  ```console
-  tpdb find-dupes /path/to/your/posters
-  ```
+- **`new`** (default): Processes new poster files and ZIP archives, organizing them into the proper folder structure
+- **`sync`**: Reorganizes existing poster folders, useful after manually adding files or updating naming conventions
 
-  If you don't provide a path, it defaults to `/data/Posters`.
+## Common Workflows
 
-The command will scan the directory and print a list of potential duplicates based on name similarity, which you can then review and manage manually.
+### Workflow 1: Download and Organize New Poster Sets
 
-## Example Poster Directory Structure
+Perfect for adding new poster collections to your library:
 
-Here is an example of what your poster directory might look like after being organized by this tool. This structure is ideal for use with Kometa. Note that individual movie posters are placed in a `Custom` folder (you can change the name to anything, this basically acts as the "catch-all" for any posters that don't fit into a specific collection), while collection posters are organized into their respective collection folders. You can adjust the structure as needed for your setup.
+```bash
+# Download a complete collection set
+tpdb download "https://theposterdb.com/set/12345"
+
+# Organize the downloaded set for your Movies library
+tpdb -l Movies --action new
+
+# Copy the organized posters to your media folders
+tpdb -l Movies --copy
+```
+
+<!-- Placeholder for workflow screenshot -->
+![Download and organize workflow](docs/images/workflow-download.png)
+*Complete workflow from download to organization*
+
+### Workflow 2: Sync Existing Posters
+
+When you've manually added posters or want to reorganize:
+
+```bash
+# Reorganize existing TV show posters
+tpdb -l "TV Shows" --action sync
+
+# Sync and link to media folders
+tpdb -l "TV Shows" --action sync --copy
+```
+
+### Workflow 3: Find and Fix Unlinked Posters
+
+Clean up orphaned poster folders that don't match any media:
+
+```bash
+# Find unlinked posters in Movies library
+tpdb -l Movies --unlinked
+
+# The tool will prompt you to match or rename each unlinked folder
+```
+
+### Workflow 4: Clean Up Duplicates
+
+Maintain a clean poster directory:
+
+```bash
+# Find duplicates in your poster directory
+tpdb find-dupes /data/Posters
+
+# Review the list and manually remove duplicates
+# (TPDB identifies them but doesn't auto-delete for safety)
+```
+
+### Workflow 5: Batch Processing with Filters
+
+Process specific poster folders:
+
+```bash
+# Only process folders matching "Marvel"
+tpdb -l Movies --filter "Marvel"
+
+# Force organize all matching folders without prompts
+tpdb -l Movies --filter "Marvel" --all
+```
+
+## Directory Structure
+
+TPDB organizes your posters into a clean, hierarchical structure optimized for Kometa and Plex:
+
+### Default Structure
 
 ```text
-/data/Posters/
-├── Movies/
-│   ├── Custom/
+/data/Posters/                          # Default poster root directory
+├── Movies/                             # Movie library posters
+│   ├── Custom/                         # Individual movie posters (catch-all)
 │   │   ├── The Matrix (1999)/
 │   │   │   └── poster.jpg
-│   │   └── The Matrix Reloaded (2003)/
+│   │   ├── Inception (2010)/
+│   │   │   └── poster.jpg
+│   │   └── Interstellar (2014)/
 │   │       └── poster.jpg
-│   └── Movie Collection Name/
-│       ├── Movie 1 in Collection/
+│   │
+│   ├── Marvel Cinematic Universe/     # Collection posters
+│   │   ├── Iron Man (2008)/
+│   │   │   └── poster.jpg
+│   │   ├── The Avengers (2012)/
+│   │   │   └── poster.jpg
+│   │   └── Avengers Endgame (2019)/
+│   │       └── poster.jpg
+│   │
+│   └── The Dark Knight Trilogy/       # Another collection
+│       ├── Batman Begins (2005)/
 │       │   └── poster.jpg
-│       └── Movie 2 in Collection/
+│       ├── The Dark Knight (2008)/
+│       │   └── poster.jpg
+│       └── The Dark Knight Rises (2012)/
 │           └── poster.jpg
-├── TV Shows/
-│   └── Breaking Bad/
+│
+├── TV Shows/                           # TV series posters
+│   ├── Breaking Bad/
+│   │   ├── poster.jpg                 # Show poster
+│   │   ├── Season01.jpg               # Season 1 poster
+│   │   ├── Season02.jpg               # Season 2 poster
+│   │   ├── Season03.jpg
+│   │   ├── Season04.jpg
+│   │   ├── Season05.jpg
+│   │   └── Season00.jpg               # Specials
+│   │
+│   ├── Game of Thrones/
+│   │   ├── poster.jpg
+│   │   ├── Season01.jpg
+│   │   ├── Season02.jpg
+│   │   └── ...
+│   │
+│   └── The Office/
 │       ├── poster.jpg
-│       ├── Season01.jpg
-│       ├── Season02.jpg
-│       └── Season00.jpg  (Specials)
-└── Archives/
-  └── (Zipped files are moved here after processing)
+│       └── Season01.jpg
+│
+└── Archives/                           # Processed ZIP files
+    ├── marvel-posters-set.zip
+    ├── dc-collection.zip
+    └── tv-shows-bundle.zip
 ```
+
+### Key Structure Notes
+
+- **Movies**: Organized into collection folders or "Custom" for standalone films
+- **TV Shows**: Seasons use zero-padded naming (Season01, Season02, etc.)
+- **Collections**: Each movie in a collection gets its own subfolder
+- **Archives**: ZIP files are moved here after extraction to keep directories clean
+- **Naming**: All poster files are renamed to `poster.jpg` for consistency
+
+<!-- Placeholder for directory structure visualization -->
+![Directory structure example](docs/images/structure-example.png)
+*Clean, organized poster structure ready for Kometa*
+
+## How It Works
+
+TPDB uses intelligent fuzzy matching to automate poster organization:
+
+### 1. Name Normalization
+
+Before matching, TPDB normalizes media and poster names:
+
+- Removes years, punctuation, and "set by" text
+- Converts to lowercase for comparison
+- Strips extra whitespace
+
+**Example:** `"The Matrix (1999) set by UserXYZ"` → `"the matrix"`
+
+### 2. Fuzzy Matching
+
+Uses the `rapidfuzz` library with configurable thresholds:
+
+- **Library matching**: 70%+ similarity for directory discovery
+- **Media matching**: Token-based matching for poster-to-media association
+- **Duplicate detection**: 74%+ similarity for finding duplicates
+
+### 3. Interactive Confirmation
+
+When matches are uncertain, TPDB prompts for confirmation:
+
+- Shows match score with color coding (green for high confidence, yellow/red for lower)
+- Offers options: Accept match, Force organization, or Skip
+- Learns from your decisions to improve future matches
+
+### 4. Organization
+
+Once matched, TPDB:
+
+- Creates proper folder structure
+- Renames posters to standard format
+- Organizes collections into subfolders
+- Moves processed archives to Archives directory
+
+### 5. Linking (Optional)
+
+With the `--copy` flag, creates hard links:
+
+- Links organized posters to actual media folders
+- Plex can read posters directly from media directories
+- No file duplication (hard links share disk space)
+
+## Troubleshooting
+
+### Common Issues
+
+**Problem: "Cannot connect to Plex server"**
+
+- Verify your Plex server is running and accessible
+- Check the server URL in `~/.config/plexapi/config.ini`
+- Ensure your authentication token is valid
+- Try accessing Plex web interface from the same machine
+
+**Problem: "Posters not matching to media"**
+
+- Check that library names match between TPDB and Plex
+- Use the `--filter` option to narrow down the search
+- Try `--force` mode to organize without matching
+- Verify poster file names are reasonably similar to media names
+
+**Problem: "Permission denied when creating hard links"**
+
+- Ensure you have write permissions to both poster and media directories
+- Hard links require both directories to be on the same filesystem
+- Consider using symbolic links instead (requires code modification)
+
+**Problem: "Duplicates not detected"**
+
+- Adjust the similarity threshold if needed (default is 74%)
+- Check that folder names are similar enough for fuzzy matching
+- Verify you're searching the correct directory
+
+### Getting Help
+
+- **Check existing issues**: [GitHub Issues](https://github.com/tahmidul612/tpdb/issues)
+- **Open a new issue**: Provide details about your setup and error messages
+- **Discussion forum**: Ask questions in GitHub Discussions
+- **Logs**: Run with verbose output and include relevant error messages
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Development environment setup
+- Coding standards and conventions
+- Testing guidelines
+- Pull request process
+- Commit message format
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- **[ThePosterDB](https://theposterdb.com/)** - Excellent source for high-quality custom posters
+- **[Kometa](https://kometa.wiki/)** - Powerful Plex metadata manager that inspired this tool
+- **[PlexAPI](https://github.com/pkkid/python-plexapi)** - Python bindings for the Plex API
+- **[Typer](https://typer.tiangolo.com/)** - Modern CLI framework
+- **[Rich](https://rich.readthedocs.io/)** - Beautiful terminal formatting
+- **[RapidFuzz](https://github.com/maxbachmann/RapidFuzz)** - Fast fuzzy string matching
+
+---
+
+**Made with ❤️ by [Tahmidul Islam](https://github.com/tahmidul612)**
+
+Star ⭐ this repository if you find it helpful!

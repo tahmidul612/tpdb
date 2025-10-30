@@ -240,3 +240,6 @@ $RECYCLE.BIN/
 *.png
 *.jpeg
 *.zip
+
+# Temporary documentation files
+CONTRIBUTING_NEW.md

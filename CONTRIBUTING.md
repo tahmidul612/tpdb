@@ -323,43 +323,325 @@ POSTER_DIR = "/data/Posters"  # Default directory
 
 This pattern allows the main module's functions to access configuration without passing parameters everywhere.
 
-## Code Quality Tools
+## Development Workflow
 
-This project uses several tools to maintain code quality:
+### Creating a Feature Branch
 
-### Ruff
-
-Ruff handles both linting and formatting Python code. Configuration is in `pyproject.toml`:
-
-- Line length: 88 characters (Black-compatible)
-- Target: Python 3.10+
-- LF line endings
-
-**Usage**:
+Always create a new branch for your changes following the [branch naming convention](#branch-naming-convention):
 
 ```bash
-# Lint and auto-fix issues
+# Sync with upstream first
+git fetch upstream
+git checkout main
+git merge upstream/main
+
+# Create your feature branch
+git checkout -b feat/your-feature-name
+# or
+git checkout -b fix/bug-description
+# or
+git checkout -b docs/update-readme
+```
+
+### Making Changes
+
+1. **Make your code changes** in the appropriate module
+2. **Follow the code standards** outlined in this guide
+3. **Add or update tests** for your changes
+4. **Update documentation** if needed (README, docstrings, etc.)
+
+### Testing Your Changes
+
+Test thoroughly before committing:
+
+```bash
+# Run the full test suite
+pytest
+
+# Run tests with verbose output
+pytest -v
+
+# Run tests for a specific file
+pytest tests/test_main.py
+
+# Run a specific test function
+pytest tests/test_main.py::test_normalize_name
+```
+
+**Manual testing:**
+
+```bash
+# Test the main CLI
+tpdb --help
+
+# Test with your Plex library (use a test library if possible)
+tpdb -l "Test Movies" --action new
+
+# Test download functionality
+tpdb download "https://theposterdb.com/set/12345"
+
+# Test duplicate detection
+tpdb find-dupes /path/to/test/posters
+```
+
+### Committing Changes
+
+We use **Conventional Commits** (see [Commit Conventions](#commit-conventions) below).
+
+**Using commitizen (recommended):**
+
+```bash
+# Interactive commit prompt
+cz commit
+```
+
+This guides you through:
+1. Selecting commit type (feat, fix, docs, etc.)
+2. Writing a short description
+3. Optional longer description
+4. Breaking changes (if any)
+
+**Manual commits:**
+
+```bash
+# Format: <type>: <description>
+git commit -m "feat: add support for custom poster directories"
+git commit -m "fix: resolve fuzzy matching threshold issues"
+git commit -m "docs: update installation instructions"
+```
+
+**Pushing your branch:**
+
+```bash
+# Push to your fork
+git push origin your-branch-name
+
+# If pre-push hooks fail, fix the issues and try again
+```
+
+## Code Standards
+
+### Python Style Guide
+
+TPDB follows PEP 8 with some project-specific conventions:
+
+- **Line length**: 88 characters (Black-compatible)
+- **Indentation**: 4 spaces (no tabs)
+- **Line endings**: LF (Unix-style)
+- **Quotes**: Double quotes for strings
+- **Imports**: Organized and grouped (standard library, third-party, local)
+
+### Naming Conventions
+
+Follow these naming patterns consistently:
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Functions | snake_case | `find_best_media_match()` |
+| Variables | snake_case | `best_match`, `poster_folders` |
+| Classes | PascalCase | `LibraryData`, `Posters`, `Options` |
+| Constants | UPPER_SNAKE_CASE | `POSTER_DIR`, `DEFAULT_THRESHOLD` |
+| Private/internal | _leading_underscore | `_internal_helper()` |
+| Module names | snake_case | `main.py`, `matcher.py` |
+
+**Important**: The codebase has been refactored from camelCase to snake_case. Always use snake_case for new code.
+
+### Documentation
+
+**Docstrings** (Google style):
+
+```python
+def find_best_media_match(poster_name: str, media_items: list[str]) -> tuple[str, int]:
+    """Find the best matching media item for a poster using fuzzy matching.
+
+    Args:
+        poster_name: The name of the poster to match.
+        media_items: List of media item names to search.
+
+    Returns:
+        A tuple of (best_match_name, match_score) where match_score is 0-100.
+
+    Raises:
+        ValueError: If media_items is empty.
+    """
+    # Implementation
+```
+
+**Comments**:
+- Add comments for complex logic or non-obvious code
+- Avoid obvious comments that just repeat the code
+- Use comments to explain *why*, not *what*
+
+**Type hints**:
+- Use type hints for all function signatures
+- Import types from `typing` module when needed
+- Use modern type syntax (e.g., `list[str]` instead of `List[str]` in Python 3.10+)
+
+### Console Output Patterns
+
+Use **rich markup** for consistent, beautiful terminal output:
+
+```python
+from rich.console import Console
+console = Console()
+
+# Success messages
+console.print("[bold green]✓[/bold green] Operation completed successfully")
+
+# Info messages
+console.print("[bold cyan]Processing:[/bold cyan] Movie Library")
+
+# Warnings
+console.print("[yellow]⚠ Warning:[/yellow] Match score below threshold")
+
+# Errors
+console.print("[bold red]✗ Error:[/bold red] Library not found")
+
+# Dimmed/secondary info
+console.print(f"  Source: [dim]{file_name}[/dim]")
+```
+
+## Testing
+
+### Running Tests
+
+The project uses **pytest** as the testing framework:
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run specific test file
+pytest tests/test_main.py
+
+# Run specific test function
+pytest tests/test_main.py::test_normalize_name
+
+# Run with coverage report
+pytest --cov=src/tpdb --cov-report=html
+```
+
+### Writing Tests
+
+When adding new functionality, include appropriate tests:
+
+**Test file structure:**
+
+```python
+import pytest
+from tpdb.main import normalize_name, find_best_media_match
+
+def test_normalize_name():
+    """Test name normalization removes years and punctuation."""
+    assert normalize_name("The Matrix (1999)") == "the matrix"
+    assert normalize_name("Movie: The Sequel") == "movie the sequel"
+
+def test_find_best_media_match():
+    """Test fuzzy matching finds correct media item."""
+    media_items = ["The Dark Knight", "The Dark Knight Rises"]
+    match, score = find_best_media_match("Dark Knight (2008)", media_items)
+    assert match == "The Dark Knight"
+    assert score > 80
+```
+
+**Testing guidelines:**
+
+- One test file per module (e.g., `test_main.py` for `main.py`)
+- Use descriptive test function names (`test_<what>_<condition>_<expected>`)
+- Include docstrings explaining what the test validates
+- Use pytest fixtures for common setup
+- Test edge cases and error conditions
+- Mock external dependencies (Plex API, file I/O)
+
+**Current test coverage:**
+
+⚠️ The project currently has minimal test coverage:
+- Only `normalize_name()` is tested
+- Most functionality is untested
+
+**Your contribution can help improve this!** Adding tests for existing code is a valuable contribution.
+
+## Code Quality Tools
+
+### Ruff (Linter & Formatter)
+
+**Ruff** is an extremely fast Python linter and formatter that replaces multiple tools (flake8, black, isort, etc.).
+
+**Configuration** is in `pyproject.toml`:
+
+```toml
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+```
+
+**Usage:**
+
+```bash
+# Check for linting issues
+ruff check .
+
+# Auto-fix issues
 ruff check . --fix
 
 # Format code
 ruff format .
+
+# Check and format in one command
+ruff check . --fix && ruff format .
 ```
 
-### Pre-commit
+**Common linting errors:**
 
-Pre-commit runs automated checks before commits:
+- **E501**: Line too long (max 88 characters)
+- **F401**: Unused import
+- **F841**: Unused variable
+- **E711**: Comparison to None should use 'is'
 
-- **uv-lock & uv-export**: Keep dependencies synchronized
-- **ruff**: Lint and format Python code
-- **trailing-whitespace**: Remove trailing whitespace
-- **mixed-line-ending**: Ensure LF line endings
-- **mdformat**: Format Markdown files
-- **commitizen**: Validate commit messages and branch names
-- **detect-secrets**: Check for accidentally committed secrets
+Most issues can be auto-fixed with `ruff check . --fix`.
 
-## Commit Guidelines
+### Pre-commit Hooks
 
-This project follows [Conventional Commits](https://www.conventionalcommits.org/).
+Pre-commit hooks run automatically before each commit to ensure code quality:
+
+**Installed hooks:**
+
+1. **uv-lock**: Updates lock file when `pyproject.toml` changes
+2. **uv-export**: Exports `requirements.txt` from lock file
+3. **trailing-whitespace**: Removes trailing whitespace
+4. **check-illegal-windows-names**: Prevents Windows-incompatible filenames
+5. **mixed-line-ending**: Ensures LF line endings
+6. **ruff-check**: Lints Python code
+7. **ruff-format**: Formats Python code
+8. **mdformat**: Formats Markdown files
+9. **commitizen**: Validates commit messages
+10. **commitizen-branch**: Validates branch names (pre-push)
+11. **detect-secrets**: Prevents committing secrets
+
+**Manual runs:**
+
+```bash
+# Run all hooks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run ruff-check --all-files
+
+# Skip hooks (use sparingly!)
+git commit --no-verify -m "feat: add feature"
+```
+
+## Commit Conventions
+
+TPDB follows [Conventional Commits](https://www.conventionalcommits.org/) for clear, standardized commit messages.
 
 ### Commit Message Format
 
@@ -367,34 +649,81 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 <type>[optional scope]: <description>
 
 [optional body]
+
+[optional footer(s)]
 ```
 
 ### Commit Types
 
-- **feat**: New features
-- **fix**: Bug fixes
-- **refactor**: Code changes that neither fix bugs nor add features
-- **docs**: Documentation only changes
-- **style**: Formatting, no code change
-- **test**: Adding or correcting tests
-- **chore**: Maintenance tasks (dependency updates, build tasks, etc.)
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New features | `feat: add support for custom directories` |
+| `fix` | Bug fixes | `fix: resolve memory leak in processor` |
+| `docs` | Documentation only | `docs: update README installation section` |
+| `style` | Code style/formatting | `style: apply ruff formatting` |
+| `refactor` | Code restructuring | `refactor: simplify matching logic` |
+| `test` | Test additions/changes | `test: add tests for normalize_name` |
+| `chore` | Maintenance tasks | `chore: update dependencies` |
+| `perf` | Performance improvements | `perf: optimize fuzzy matching` |
+| `ci` | CI/CD changes | `ci: add GitHub Actions workflow` |
 
-### Commit Examples
+### Examples
+
+**Good commit messages:**
 
 ```bash
 feat: add support for custom poster directories
 fix: resolve fuzzy matching threshold issues
-refactor: improve normalize_name function performance
-docs: update README with new installation steps
-chore: update dependencies to latest versions
+docs: update contributing guide with code standards
+refactor: extract user prompt helpers into functions
+test: add comprehensive tests for matcher module
+chore: bump rapidfuzz to version 3.0.0
 ```
 
-### Using Commitizen
-
-Use the interactive prompt for guided commit creation:
+**Bad commit messages:**
 
 ```bash
-cz commit
+# Too vague
+fix: fix bug
+
+# Missing type
+Add new feature
+
+# Not descriptive
+update code
+
+# Wrong type
+feat: fix typo in README  # Should be "docs:"
+```
+
+### Commit Body (Optional)
+
+For complex changes, add a detailed body:
+
+```text
+feat: add support for custom poster directories
+
+Users can now specify custom directories for poster storage
+instead of using the default /data/Posters path. This adds
+flexibility for users with different storage configurations.
+
+- Add --poster-dir CLI option
+- Update configuration to support custom paths
+- Add validation for directory existence
+
+Closes #42
+```
+
+### Breaking Changes
+
+If your commit introduces breaking changes, mark it clearly:
+
+```text
+feat!: change default poster directory structure
+
+BREAKING CHANGE: The default directory structure has changed.
+Users will need to reorganize existing posters or update their
+configuration to use the old structure.
 ```
 
 ## Branch Naming Convention
@@ -416,156 +745,193 @@ git checkout -b docs/update-contributing-guide
 git checkout -b refactor/simplify-matching-logic
 ```
 
-## Testing
+### Branch Name Rules
 
-The project uses `pytest` for testing.
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run tests with verbose output
-pytest -v
-
-# Run specific test
-pytest tests/test_main.py
-```
-
-### Current Test Coverage
-
-Currently, the project has minimal test coverage:
-
-- Only `normalize_name()` function is tested in `tests/test_main.py`
-- Most functionality is untested
-
-When contributing new features, please add appropriate tests.
+- Use lowercase only
+- Use hyphens to separate words (not underscores or spaces)
+- Keep names short but descriptive
+- Match the type to the primary work being done
 
 ## Pull Request Process
 
-1. **Ensure all checks pass**:
+### Before Submitting
 
-   - Pre-commit hooks run successfully
-   - All tests pass
-   - Code follows project conventions
+Complete this checklist before opening a PR:
 
-1. **Write a clear PR description**:
+- [ ] All tests pass locally (`pytest`)
+- [ ] Code is linted and formatted (`ruff check . --fix && ruff format .`)
+- [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
+- [ ] New tests added for new functionality
+- [ ] Documentation updated (README, docstrings, etc.)
+- [ ] Commit messages follow conventional commits
+- [ ] Branch name follows conventional branch naming
+- [ ] No merge conflicts with main branch
 
-   - Explain what changes you made and why
-   - Reference any related issues (e.g., "Fixes #123")
-   - Include examples if you've changed command-line behavior
+### PR Description Template
 
-1. **Follow conventional commits**:
+Use this template for your pull request description:
 
-   - PR titles should follow conventional commit format
-   - Example: `feat: add support for custom poster directories`
+```markdown
+## Description
 
-1. **Test your changes**:
+Brief description of what this PR does and why.
 
-   - Run the main script with different options
-   - Test the duplicates utility
-   - Ensure existing functionality still works
+## Type of Change
 
-1. **Update documentation** if needed:
+- [ ] Bug fix (non-breaking change fixing an issue)
+- [ ] New feature (non-breaking change adding functionality)
+- [ ] Breaking change (fix or feature causing existing functionality to change)
+- [ ] Documentation update
+- [ ] Code refactoring
+- [ ] Performance improvement
 
-   - Update README.md for new features
-   - Update command-line help text
-   - Add examples for new functionality
+## Changes Made
 
-## Project-Specific Notes
+- Bullet point list of changes
+- Another change
+- And another
 
-### Understanding the Codebase
+## Testing
 
-The project has been refactored to use a **modern src layout**:
+Describe how you tested your changes:
 
-- **`src/tpdb/cli.py`**: Typer-based command-line interface (~290 lines)
+- [ ] Ran test suite (`pytest`)
+- [ ] Manually tested with Movies library
+- [ ] Manually tested with TV Shows library
+- [ ] Tested download functionality
+- [ ] Tested duplicate detection
 
-  - Entry point for the `tpdb` command
-  - Handles command parsing and option processing
-  - Injects configuration into main module
+## Screenshots (if applicable)
 
-- **`src/tpdb/main.py`**: Core poster processing logic (~827 lines)
+Add screenshots or GIFs showing the changes in action.
 
-  - All business logic and file operations
-  - Helper functions for formatted user prompts
-  - Uses snake_case naming convention
+## Related Issues
 
-- **`src/tpdb/dupes.py`**: Duplicate detection utility
+Closes #123
+Related to #456
 
-  - Standalone tool for finding duplicate poster folders
-  - Uses rich for formatted output
+## Checklist
 
-- **`scripts/`**: Development utilities
-
-  - `analyze_naming.py`: Detects camelCase naming
-  - `apply_snake_case.py`: Automated naming conversions
-
-- **Global state**: The application uses global variables injected by the CLI module
-
-- **Fuzzy matching**: Core feature using `thefuzz` library with specific thresholds
-
-- **User interaction**: Uses typer for prompts and rich for formatted console output
-
-### Important Patterns
-
-- **Name normalization**: The `normalize_name()` function is critical for matching
-- **Interactive prompts**: Uses typer for user input, rich for formatted output
-- **Helper functions**: `prompt_match_confirmation()`, `prompt_collection_organization()`, `prompt_poster_organization()` provide consistent UX
-- **File organization**: Specific naming conventions for TV shows vs movies
-- **Threshold values**: 70%+ similarity for library matching, 74+ for duplicates
-- **Console output**: Uses rich markup for color-coded, formatted messages
-
-### Testing Your Changes
-
-When working on poster organization features:
-
-```bash
-# Test with different library types
-tpdb -l Movies --action new
-tpdb -l "TV Shows" --action sync
-
-# Test duplicate detection
-tpdb find-dupes /path/to/test/posters
-
-# Test download functionality
-tpdb download "https://theposterdb.com/set/12345"
-
-# Or use the -d flag with main command
-tpdb -d "https://theposterdb.com/set/12345" -l Movies
+- [ ] My code follows the project's code standards
+- [ ] I have performed a self-review of my code
+- [ ] I have commented my code where necessary
+- [ ] I have updated the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix/feature works
+- [ ] New and existing tests pass locally
 ```
 
-### Code Quality Standards
+### Review Process
 
-The refactored codebase follows Python best practices:
+1. **Automated checks**: GitHub Actions (if configured) will run tests and linting
+2. **Code review**: Maintainers will review your code
+3. **Feedback**: Address any requested changes
+4. **Approval**: Once approved, your PR will be merged
+5. **Changelog**: Your changes will be included in the next release
 
-- **Naming**: Functions and variables use snake_case, classes use PascalCase
-- **Type hints**: Used throughout for better IDE support and type checking
-- **Docstrings**: Google-style docstrings with Args/Returns sections
-- **Console output**: Rich markup for colored, formatted messages
-- **Error handling**: Graceful degradation with informative user prompts
+**What reviewers look for:**
+
+- Code quality and adherence to standards
+- Test coverage for new functionality
+- Clear commit messages and PR description
+- No breaking changes (unless intentional and documented)
+- Performance considerations
+- Security implications
+
+**Response time:**
+
+- We aim to provide initial feedback within 1-2 weeks
+- More complex PRs may take longer to review
+- Feel free to ping maintainers if you haven't heard back
+
+## Development Tips
+
+### Debugging
+
+**Enable verbose logging:**
+
+Currently, TPDB doesn't have extensive logging. When debugging:
+
+1. Add temporary `console.print()` statements
+2. Use Python's debugger: `import pdb; pdb.set_trace()`
+3. Check Plex server logs for API errors
+
+**Common issues:**
+
+- **Import errors**: Ensure you installed in editable mode (`pip install -e .`)
+- **Plex connection**: Verify server URL and token in config file
+- **File permissions**: Check write permissions to poster directory
+
+### Working with Fuzzy Matching
+
+The fuzzy matching logic is critical. When modifying:
+
+- Test with various name formats (years, special characters, etc.)
+- Maintain existing threshold values (70% for libraries, 74% for duplicates)
+- Use `normalize_name()` before matching
+- Test with both movie and TV show names
+
+**Example test cases:**
+
+```python
+# These should match
+"The Matrix (1999)" → "The Matrix"
+"Movie: The Sequel" → "Movie The Sequel"
+"Dark Knight, The" → "The Dark Knight"
+```
 
 ### Development Scripts
 
-Use the scripts in `scripts/` directory for code maintenance:
+The `scripts/` directory contains helpful utilities:
 
 ```bash
-# Analyze naming conventions
+# Detect camelCase names in codebase
 python scripts/analyze_naming.py
 
-# Preview naming conversions (dry-run)
+# Preview snake_case conversions
 python scripts/apply_snake_case.py --dry-run
 
 # Apply conversions interactively
 python scripts/apply_snake_case.py --interactive
 ```
 
-See `scripts/README.md` for detailed documentation on these utilities.
+See `scripts/README.md` for detailed documentation.
+
+### IDE Setup
+
+**VS Code:**
+
+Recommended extensions (from `.vscode/extensions.json`):
+- Python
+- Ruff
+- GitLens
+
+**PyCharm:**
+
+1. Mark `src` as Sources Root
+2. Enable Python 3.10+ support
+3. Configure Ruff as external tool
 
 ## Getting Help
 
-- **Issues**: Check [GitHub Issues](https://github.com/tahmidul612/tpdb/issues)
-- **Questions**: Open a discussion or create an issue
-- **Documentation**: Refer to README.md for usage examples
+Need assistance? Here's how to get help:
 
-**Thank you for contributing to TPDB!** Your contributions help improve poster organization for Plex users everywhere.
+- **Documentation**: Start with [README.md](README.md) for usage
+- **Issues**: Search [existing issues](https://github.com/tahmidul612/tpdb/issues)
+- **New issue**: Open an issue with details about your problem
+- **Discussions**: Use GitHub Discussions for questions and ideas
+- **Code review**: Request review from maintainers in your PR
+
+**When asking for help, include:**
+
+- Python version (`python --version`)
+- Operating system
+- TPDB version or commit hash
+- Error messages (full stack trace)
+- Steps to reproduce the issue
+
+---
+
+**Thank you for contributing to TPDB!** Your efforts help make poster management easier for Plex users worldwide. Every contribution, no matter how small, is valued and appreciated.
+
+Happy coding! 🎨🎬

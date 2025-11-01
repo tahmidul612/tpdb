@@ -8,6 +8,10 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.prompt import Prompt, Confirm
+from rich.panel import Panel
+from rich.status import Status
+from rich.table import Table
 
 # Initialize Rich console
 console = Console()
@@ -18,6 +22,127 @@ app = typer.Typer(
     help="Reorganize ThePosterDB files to work with Kometa (formerly Plex Meta Manager)",
     no_args_is_help=False,
 )
+
+
+def test_plex_connection(url: str, token: str) -> tuple[bool, str, Optional[object]]:
+    """
+    Test Plex server connection and return status.
+
+    Returns:
+        tuple: (success: bool, message: str, server: Optional[PlexServer])
+    """
+    from plexapi.server import PlexServer
+    from plexapi.exceptions import Unauthorized, BadRequest
+    from requests.exceptions import ConnectionError, Timeout
+
+    try:
+        with Status("[bold cyan]Connecting to Plex server...", console=console):
+            server = PlexServer(url, token, timeout=30)
+
+        # Get server info for confirmation
+        server_name = server.friendlyName
+        server_version = server.version
+
+        return (
+            True,
+            f"Connected to [bold green]{server_name}[/bold green] (v{server_version})",
+            server,
+        )
+
+    except Unauthorized:
+        return False, "[bold red]Authentication failed:[/bold red] Invalid token", None
+    except BadRequest as e:
+        return False, f"[bold red]Bad request:[/bold red] {str(e)}", None
+    except (ConnectionError, Timeout):
+        return (
+            False,
+            f"[bold red]Connection failed:[/bold red] Could not reach server at {url}\n[dim]Check the URL and ensure the server is running[/dim]",
+            None,
+        )
+    except Exception as e:
+        return False, f"[bold red]Unexpected error:[/bold red] {str(e)}", None
+
+
+@app.command()
+def login(
+    test_only: bool = typer.Option(
+        False, "--test", help="Test connection without saving credentials"
+    ),
+):
+    """Interactive Plex authentication setup."""
+    import os
+
+    # Display welcome panel
+    console.print()
+    console.print(
+        Panel.fit(
+            "[bold cyan]Plex Server Authentication[/bold cyan]\n\n"
+            "Configure your Plex server connection.\n"
+            "You can find your token at: [link]https://support.plex.tv/articles/204059436/[/link]",
+            border_style="cyan",
+        )
+    )
+    console.print()
+
+    # Prompt for URL
+    plex_url = Prompt.ask(
+        "[bold]Plex Server URL[/bold]",
+        default="http://localhost:32400",
+    )
+
+    # Validate URL format
+    if not plex_url.startswith(("http://", "https://")):
+        console.print(
+            "[bold yellow]Warning:[/bold yellow] URL should start with http:// or https://"
+        )
+        plex_url = f"http://{plex_url}"
+        console.print(f"[dim]Using: {plex_url}[/dim]")
+
+    # Prompt for token (password style for security)
+    plex_token = Prompt.ask("[bold]Plex Authentication Token[/bold]", password=True)
+
+    # Test connection
+    console.print()
+    success, message, server = test_plex_connection(plex_url, plex_token)
+    console.print(message)
+
+    if not success:
+        console.print(
+            "\n[bold red]✗[/bold red] Connection failed. Please check your credentials and try again."
+        )
+        raise typer.Exit(code=1)
+
+    # Display server info in a table
+    if server:
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_row("[bold]Server Name:[/bold]", server.friendlyName)
+        table.add_row("[bold]Version:[/bold]", server.version)
+        table.add_row("[bold]Platform:[/bold]", server.platform)
+        console.print()
+        console.print(table)
+
+    console.print("\n[bold green]✓[/bold green] Successfully connected to Plex server!")
+
+    # Save credentials unless test-only mode
+    if test_only:
+        console.print("\n[dim]Test mode - credentials not saved[/dim]")
+        return
+
+    if Confirm.ask("\n[bold]Save credentials?[/bold]", default=True):
+        config_directory = os.path.expanduser("~/.config/plexapi")
+        os.makedirs(config_directory, exist_ok=True)
+        config_file_path = os.path.join(config_directory, "config.ini")
+
+        with open(config_file_path, "w") as configfile:
+            configfile.write("[auth]\n")
+            configfile.write(f"server_baseurl = {plex_url}\n")
+            configfile.write(f"server_token = {plex_token}\n")
+
+        console.print(
+            f"\n[bold green]✓[/bold green] Credentials saved to [dim]{config_file_path}[/dim]"
+        )
+    else:
+        console.print("\n[dim]Credentials not saved[/dim]")
 
 
 @app.command()

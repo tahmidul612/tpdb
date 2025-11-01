@@ -61,6 +61,10 @@ Perfect for Plex enthusiasts using metadata managers like [Kometa](https://komet
   - [5. Linking (Optional)](#5-linking-optional)
 - [Troubleshooting](#troubleshooting)
   - [Common Issues](#common-issues)
+    - [Problem: "Cannot connect to Plex server"](#problem-cannot-connect-to-plex-server)
+    - [Problem: "Posters not matching to media"](#problem-posters-not-matching-to-media)
+    - [Problem: "Permission denied when creating hard links"](#problem-permission-denied-when-creating-hard-links)
+    - [Problem: "Duplicates not detected"](#problem-duplicates-not-detected)
   - [Getting Help](#getting-help)
 - [Contributing](#contributing)
 - [License](#license)
@@ -173,7 +177,7 @@ When you run `tpdb` for the first time, you'll be prompted to enter:
 
 If you choose to save these credentials, TPDB creates a configuration file at:
 
-```
+```text
 ~/.config/plexapi/config.ini
 ```
 
@@ -486,27 +490,27 @@ With the `--copy` flag, creates hard links:
 
 ### Common Issues
 
-**Problem: "Cannot connect to Plex server"**
+#### Problem: "Cannot connect to Plex server"
 
 - Verify your Plex server is running and accessible
 - Check the server URL in `~/.config/plexapi/config.ini`
 - Ensure your authentication token is valid
 - Try accessing Plex web interface from the same machine
 
-**Problem: "Posters not matching to media"**
+#### Problem: "Posters not matching to media"
 
 - Check that library names match between TPDB and Plex
 - Use the `--filter` option to narrow down the search
 - Try `--force` mode to organize without matching
 - Verify poster file names are reasonably similar to media names
 
-**Problem: "Permission denied when creating hard links"**
+#### Problem: "Permission denied when creating hard links"
 
 - Ensure you have write permissions to both poster and media directories
 - Hard links require both directories to be on the same filesystem
 - Consider using symbolic links instead (requires code modification)
 
-**Problem: "Duplicates not detected"**
+#### Problem: "Duplicates not detected"
 
 - Adjust the similarity threshold if needed (default is 74%)
 - Check that folder names are similar enough for fuzzy matching

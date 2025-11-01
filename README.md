@@ -189,9 +189,10 @@ server_baseurl = http://your-server:32400
 server_token = your_plex_token_here
 ```
 
-<!-- Placeholder for configuration screenshot -->
-![Plex configuration prompt](docs/images/config-setup.png)
-*First-time configuration - entering Plex server details*
+<div align="center">
+  <img src="docs/assets/config-setup.png" alt="Plex configuration setup" width="800">
+  <p><em>First-time configuration - entering Plex server details</em></p>
+</div>
 
 ## Quick Start
 
@@ -208,9 +209,10 @@ tpdb -l Movies --action new
 tpdb -l "TV Shows" --action sync --copy
 ```
 
-<!-- Placeholder for quick start demo -->
-![Quick start example](docs/images/quickstart.gif)
-*Download, organize, and sync posters in minutes*
+<div align="center">
+  <img src="docs/assets/quickstart.gif" alt="Quick start demo" width="800">
+  <p><em>Download, organize, and sync posters in minutes</em></p>
+</div>
 
 ## Usage
 
@@ -254,6 +256,11 @@ tpdb -d "https://theposterdb.com/set/12345" -l Movies --action new
 ```
 
 The downloaded files are automatically saved to your poster directory and can be immediately organized.
+
+<div align="center">
+  <img src="docs/assets/download-demo.gif" alt="Download command demo" width="800">
+  <p><em>Downloading poster sets from ThePosterDB</em></p>
+</div>
 
 ### Duplicate Detection
 
@@ -304,9 +311,10 @@ tpdb -l Movies --action new
 tpdb -l Movies --copy
 ```
 
-<!-- Placeholder for workflow screenshot -->
-![Download and organize workflow](docs/images/workflow-download.png)
-*Complete workflow from download to organization*
+<div align="center">
+  <img src="docs/assets/workflow-download.png" alt="Download and organize workflow" width="800">
+  <p><em>Complete workflow from download to organization</em></p>
+</div>
 
 ### Workflow 2: Sync Existing Posters
 
@@ -422,9 +430,10 @@ TPDB organizes your posters into a clean, hierarchical structure optimized for K
 - **Archives**: ZIP files are moved here after extraction to keep directories clean
 - **Naming**: All poster files are renamed to `poster.jpg` for consistency
 
-<!-- Placeholder for directory structure visualization -->
-![Directory structure example](docs/images/structure-example.png)
-*Clean, organized poster structure ready for Kometa*
+<div align="center">
+  <img src="docs/assets/structure-example.png" alt="Directory structure visualization" width="800">
+  <p><em>Clean, organized poster structure ready for Kometa</em></p>
+</div>
 
 ## How It Works
 

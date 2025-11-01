@@ -16,7 +16,7 @@
 
 Perfect for Plex enthusiasts using metadata managers like [Kometa](https://kometa.wiki/) (formerly Plex Meta Manager) or managing posters directly in your media library.
 
----
+______________________________________________________________________
 
 <div align="center">
   <img src="assets/demo.gif" alt="TPDB demo" width="800">
@@ -29,8 +29,8 @@ Perfect for Plex enthusiasts using metadata managers like [Kometa](https://komet
 - [Why TPDB?](#why-tpdb)
 - [Key Features](#key-features)
   - [🎨 Smart Poster Management](#-smart-poster-management)
-  - [📥 Download \& Extract](#-download--extract)
-  - [🔄 Sync \& Link](#-sync--link)
+  - [📥 Download & Extract](#-download--extract)
+  - [🔄 Sync & Link](#-sync--link)
   - [🔍 Duplicate Detection](#-duplicate-detection)
   - [💎 User Experience](#-user-experience)
 - [Installation](#installation)
@@ -129,7 +129,7 @@ Managing custom posters for a large Plex library can be tedious and time-consumi
    cd tpdb
    ```
 
-2. **Install using pip:**
+1. **Install using pip:**
 
    ```bash
    # For regular use
@@ -152,7 +152,7 @@ Managing custom posters for a large Plex library can be tedious and time-consumi
    uv sync --group dev
    ```
 
-3. **Verify installation:**
+1. **Verify installation:**
 
    ```bash
    tpdb --help
@@ -171,7 +171,7 @@ TPDB needs to connect to your Plex server to access library information for inte
 When you run `tpdb` for the first time, you'll be prompted to enter:
 
 1. **Plex Server URL**: Your server address (e.g., `http://192.168.1.100:32400`)
-2. **Authentication Token**: Your Plex token ([how to find it](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
+1. **Authentication Token**: Your Plex token ([how to find it](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
 
 **Saving configuration:**
 
@@ -194,7 +194,7 @@ server_token = your_plex_token_here
 ```
 
 <div align="center">
-  <img src="docs/assets/config-setup.png" alt="Plex configuration setup" width="800">
+  <img src="assets/login.gif" alt="Plex configuration setup" width="800">
   <p><em>First-time configuration - entering Plex server details</em></p>
 </div>
 
@@ -546,7 +546,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **[Rich](https://rich.readthedocs.io/)** - Beautiful terminal formatting
 - **[RapidFuzz](https://github.com/maxbachmann/RapidFuzz)** - Fast fuzzy string matching
 
----
+______________________________________________________________________
 
 **Made with ❤️ by [Tahmidul Islam](https://github.com/tahmidul612)**
 

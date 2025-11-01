@@ -202,15 +202,29 @@ tpdb/
 │   ├── __init__.py        # Package initialization
 │   ├── cli.py             # Command-line interface (~290 lines)
 │   ├── main.py            # Core business logic (~827 lines)
+│   ├── matcher.py         # Fuzzy matching algorithms
 │   ├── dupes.py           # Duplicate detection utility
-│   └── matcher.py         # Fuzzy matching algorithms
+│   ├── auth/              # Authentication package
+│   │   ├── config.py      # Plex configuration management
+│   │   ├── plex_auth.py   # Plex server connection logic
+│   │   └── validators.py  # URL and token validation
+│   └── ui/                # User interface package
+│       └── prompts.py     # Rich console UI components
 │
 ├── scripts/               # Development utilities
 │   ├── analyze_naming.py  # Detects camelCase names
 │   └── apply_snake_case.py # Applies snake_case conversions
 │
-├── tests/                 # Test suite
-│   └── test_main.py       # Unit tests
+├── tests/                 # Test suite (66 tests)
+│   ├── test_matcher.py    # Matcher module tests
+│   ├── test_auth_config.py # Config management tests
+│   ├── test_auth_plex_auth.py # Plex authentication tests
+│   ├── test_auth_validators.py # Validation tests
+│   └── test_ui_prompts.py # UI prompts tests
+│
+├── assets/                # Demo and media files
+│   ├── demo.gif           # Animated demo
+│   └── demo.cast          # Asciinema recording
 │
 ├── pyproject.toml         # Project metadata and dependencies
 ├── uv.lock                # Locked dependency versions
@@ -252,8 +266,6 @@ tpdb/
 - `Options`: Configuration from CLI options
 
 **Key functions:**
-- `normalize_name()`: Name normalization for matching
-- `find_best_media_match()`: Fuzzy matching algorithm
 - `download_poster()`: Download from ThePosterDB
 - `process_zip_file()`: Extract and organize ZIP archives
 - `organize_movie_folder()` / `organize_show_folder()`: Media-specific organization
@@ -268,10 +280,54 @@ tpdb/
 
 - **Purpose**: Fuzzy string matching utilities
 - **Library**: Uses `rapidfuzz` for fast matching
+- **Key functions**:
+  - `normalize_name()`: Strips years, punctuation, "set by" text
+  - `find_best_media_match()`: Fuzzy matching using rapidfuzz
 - **Thresholds**:
   - Library matching: 70%+ similarity
   - Media matching: Token-based ratio
   - Duplicate detection: 74%+ similarity
+- **Design**: Pure functions with no global state - highly testable
+
+#### Auth Package (`src/tpdb/auth/`)
+
+Well-architected authentication module with separation of concerns:
+
+- **`config.py`** - `PlexConfigManager` and `PlexCredentials` dataclass
+  - Handles loading/saving Plex credentials from config files
+  - Proper error handling with IOError for file operations
+  - No side effects - fully testable
+
+- **`plex_auth.py`** - `PlexAuthenticator` and `ConnectionResult` dataclass
+  - Pure business logic for Plex server connections
+  - No UI dependencies - perfect for testing
+  - Comprehensive exception handling for all error types
+
+- **`validators.py`** - Input validation functions
+  - `validate_and_normalize_url()`: URL validation with scheme normalization
+  - `validate_token()`: Token format validation
+  - Returns tuple of (is_valid, value/error)
+
+**Benefits:**
+- 100% test coverage
+- Pure functions with no side effects
+- Easy to mock and test
+- Proper type hints with dataclasses
+
+#### UI Package (`src/tpdb/ui/`)
+
+Presentation layer separated from business logic:
+
+- **`prompts.py`** - `PlexAuthUI` class
+  - All Rich console UI code isolated here
+  - No business logic - only presentation
+  - Methods for panels, prompts, status, messages
+  - Dependency injection via console parameter
+
+**Benefits:**
+- Business logic can be tested without mocking Rich
+- UI can be changed without affecting core logic
+- Clear separation of concerns
 
 #### Dupes Module (`src/tpdb/dupes.py`)
 
@@ -362,10 +418,10 @@ pytest
 pytest -v
 
 # Run tests for a specific file
-pytest tests/test_main.py
+pytest tests/test_matcher.py
 
 # Run a specific test function
-pytest tests/test_main.py::test_normalize_name
+pytest tests/test_matcher.py::test_normalize_name
 ```
 
 **Manual testing:**
@@ -515,10 +571,10 @@ pytest
 pytest -v
 
 # Run specific test file
-pytest tests/test_main.py
+pytest tests/test_matcher.py
 
 # Run specific test function
-pytest tests/test_main.py::test_normalize_name
+pytest tests/test_matcher.py::test_normalize_name
 
 # Run with coverage report
 pytest --cov=src/tpdb --cov-report=html
@@ -532,7 +588,7 @@ When adding new functionality, include appropriate tests:
 
 ```python
 import pytest
-from tpdb.main import normalize_name, find_best_media_match
+from tpdb.matcher import normalize_name, find_best_media_match
 
 def test_normalize_name():
     """Test name normalization removes years and punctuation."""
@@ -549,7 +605,7 @@ def test_find_best_media_match():
 
 **Testing guidelines:**
 
-- One test file per module (e.g., `test_main.py` for `main.py`)
+- One test file per module (e.g., `test_matcher.py` for `matcher.py`)
 - Use descriptive test function names (`test_<what>_<condition>_<expected>`)
 - Include docstrings explaining what the test validates
 - Use pytest fixtures for common setup
@@ -558,11 +614,14 @@ def test_find_best_media_match():
 
 **Current test coverage:**
 
-⚠️ The project currently has minimal test coverage:
-- Only `normalize_name()` is tested
-- Most functionality is untested
+✅ The project has excellent test coverage:
+- **66 comprehensive tests** covering core functionality
+- **auth package**: 100% coverage (config, plex_auth, validators)
+- **ui package**: Full coverage (prompts)
+- **matcher module**: Complete coverage (normalize_name, find_best_media_match)
+- **Areas for improvement**: Additional tests for main.py and cli.py would be welcome
 
-**Your contribution can help improve this!** Adding tests for existing code is a valuable contribution.
+**Your contribution can help improve this!** Adding tests for main.py and cli.py integration would be valuable.
 
 ## Code Quality Tools
 

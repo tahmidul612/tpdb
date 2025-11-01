@@ -18,34 +18,53 @@ Perfect for Plex enthusiasts using metadata managers like [Kometa](https://komet
 
 ---
 
-<!-- Placeholder for demo GIF showing the tool in action -->
-![Demo of TPDB organizing posters](docs/images/demo.gif)
-*TPDB in action - downloading and organizing posters automatically*
+<div align="center">
+  <img src="assets/demo.gif" alt="TPDB demo" width="800">
+  <p><em>TPDB in action - downloading and organizing posters automatically</em></p>
+</div>
 
 ## Table of Contents
 
-- [TPDB - Plex Poster Organizer](#tpdb---plex-poster-organizer)
-  - [Table of Contents](#table-of-contents)
-  - [Why TPDB?](#why-tpdb)
-  - [Key Features](#key-features)
-  - [Installation](#installation)
-    - [Prerequisites](#prerequisites)
-    - [Quick Install](#quick-install)
-  - [Configuration](#configuration)
-    - [Plex Server Setup](#plex-server-setup)
-  - [Quick Start](#quick-start)
-  - [Usage](#usage)
-    - [Main Command](#main-command)
-    - [Download Command](#download-command)
-    - [Duplicate Detection](#duplicate-detection)
-    - [Command-Line Options](#command-line-options)
-  - [Common Workflows](#common-workflows)
-  - [Directory Structure](#directory-structure)
-  - [How It Works](#how-it-works)
-  - [Troubleshooting](#troubleshooting)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Acknowledgments](#acknowledgments)
+- [Table of Contents](#table-of-contents)
+- [Why TPDB?](#why-tpdb)
+- [Key Features](#key-features)
+  - [🎨 Smart Poster Management](#-smart-poster-management)
+  - [📥 Download \& Extract](#-download--extract)
+  - [🔄 Sync \& Link](#-sync--link)
+  - [🔍 Duplicate Detection](#-duplicate-detection)
+  - [💎 User Experience](#-user-experience)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Quick Install](#quick-install)
+- [Configuration](#configuration)
+  - [Plex Server Setup](#plex-server-setup)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+  - [Main Command](#main-command)
+  - [Download Command](#download-command)
+  - [Duplicate Detection](#duplicate-detection)
+  - [Command-Line Options](#command-line-options)
+- [Common Workflows](#common-workflows)
+  - [Workflow 1: Download and Organize New Poster Sets](#workflow-1-download-and-organize-new-poster-sets)
+  - [Workflow 2: Sync Existing Posters](#workflow-2-sync-existing-posters)
+  - [Workflow 3: Find and Fix Unlinked Posters](#workflow-3-find-and-fix-unlinked-posters)
+  - [Workflow 4: Clean Up Duplicates](#workflow-4-clean-up-duplicates)
+  - [Workflow 5: Batch Processing with Filters](#workflow-5-batch-processing-with-filters)
+- [Directory Structure](#directory-structure)
+  - [Default Structure](#default-structure)
+  - [Key Structure Notes](#key-structure-notes)
+- [How It Works](#how-it-works)
+  - [1. Name Normalization](#1-name-normalization)
+  - [2. Fuzzy Matching](#2-fuzzy-matching)
+  - [3. Interactive Confirmation](#3-interactive-confirmation)
+  - [4. Organization](#4-organization)
+  - [5. Linking (Optional)](#5-linking-optional)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Getting Help](#getting-help)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
 ## Why TPDB?
 

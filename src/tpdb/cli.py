@@ -4,14 +4,18 @@
 from __future__ import annotations
 
 import sys
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.prompt import Prompt, Confirm
-from rich.panel import Panel
-from rich.status import Status
-from rich.table import Table
+
+from tpdb.auth import (
+    PlexAuthenticator,
+    PlexConfigManager,
+    PlexCredentials,
+    validate_and_normalize_url,
+    validate_token,
+)
+from tpdb.ui import PlexAuthUI
 
 # Initialize Rich console
 console = Console()
@@ -24,45 +28,6 @@ app = typer.Typer(
 )
 
 
-def test_plex_connection(url: str, token: str) -> tuple[bool, str, Optional[object]]:
-    """
-    Test Plex server connection and return status.
-
-    Returns:
-        tuple: (success: bool, message: str, server: Optional[PlexServer])
-    """
-    from plexapi.server import PlexServer
-    from plexapi.exceptions import Unauthorized, BadRequest
-    from requests.exceptions import ConnectionError, Timeout
-
-    try:
-        with Status("[bold cyan]Connecting to Plex server...", console=console):
-            server = PlexServer(url, token, timeout=30)
-
-        # Get server info for confirmation
-        server_name = server.friendlyName
-        server_version = server.version
-
-        return (
-            True,
-            f"Connected to [bold green]{server_name}[/bold green] (v{server_version})",
-            server,
-        )
-
-    except Unauthorized:
-        return False, "[bold red]Authentication failed:[/bold red] Invalid token", None
-    except BadRequest as e:
-        return False, f"[bold red]Bad request:[/bold red] {str(e)}", None
-    except (ConnectionError, Timeout):
-        return (
-            False,
-            f"[bold red]Connection failed:[/bold red] Could not reach server at {url}\n[dim]Check the URL and ensure the server is running[/dim]",
-            None,
-        )
-    except Exception as e:
-        return False, f"[bold red]Unexpected error:[/bold red] {str(e)}", None
-
-
 @app.command()
 def login(
     test_only: bool = typer.Option(
@@ -70,79 +35,57 @@ def login(
     ),
 ):
     """Interactive Plex authentication setup."""
-    import os
+    ui = PlexAuthUI(console)
+    auth = PlexAuthenticator(timeout=30)
+    config_manager = PlexConfigManager()
 
-    # Display welcome panel
-    console.print()
-    console.print(
-        Panel.fit(
-            "[bold cyan]Plex Server Authentication[/bold cyan]\n\n"
-            "Configure your Plex server connection.\n"
-            "You can find your token at: [link]https://support.plex.tv/articles/204059436/[/link]",
-            border_style="cyan",
-        )
-    )
-    console.print()
+    # UI Layer
+    ui.show_welcome_panel()
+    plex_url = ui.prompt_url()
 
-    # Prompt for URL
-    plex_url = Prompt.ask(
-        "[bold]Plex Server URL[/bold]",
-        default="http://localhost:32400",
-    )
-
-    # Validate URL format
-    if not plex_url.startswith(("http://", "https://")):
-        console.print(
-            "[bold yellow]Warning:[/bold yellow] URL should start with http:// or https://"
-        )
-        plex_url = f"http://{plex_url}"
-        console.print(f"[dim]Using: {plex_url}[/dim]")
-
-    # Prompt for token (password style for security)
-    plex_token = Prompt.ask("[bold]Plex Authentication Token[/bold]", password=True)
-
-    # Test connection
-    console.print()
-    success, message, server = test_plex_connection(plex_url, plex_token)
-    console.print(message)
-
-    if not success:
-        console.print(
-            "\n[bold red]✗[/bold red] Connection failed. Please check your credentials and try again."
-        )
+    # Validation Layer
+    is_valid, plex_url, error = validate_and_normalize_url(plex_url)
+    if not is_valid:
+        ui.show_error(error)
         raise typer.Exit(code=1)
 
-    # Display server info in a table
-    if server:
-        table = Table(show_header=False, box=None, padding=(0, 2))
-        table.add_row("[bold]Server Name:[/bold]", server.friendlyName)
-        table.add_row("[bold]Version:[/bold]", server.version)
-        table.add_row("[bold]Platform:[/bold]", server.platform)
-        console.print()
-        console.print(table)
+    # More UI
+    plex_token = ui.prompt_token()
 
-    console.print("\n[bold green]✓[/bold green] Successfully connected to Plex server!")
+    # Validation
+    is_valid, error = validate_token(plex_token)
+    if not is_valid:
+        ui.show_error(error)
+        raise typer.Exit(code=1)
 
-    # Save credentials unless test-only mode
+    # Business Logic Layer
+    console.print()
+    with ui.show_connecting_status():
+        result = auth.connect(plex_url, plex_token)
+
+    if not result.success:
+        ui.show_error(f"Connection failed: {result.error_message}")
+        raise typer.Exit(code=1)
+
+    # Display results
+    ui.show_server_info(result.server_info)
+    ui.show_success("Successfully connected to Plex server!")
+
+    # Save if requested
     if test_only:
-        console.print("\n[dim]Test mode - credentials not saved[/dim]")
+        ui.show_info("\nTest mode - credentials not saved")
         return
 
-    if Confirm.ask("\n[bold]Save credentials?[/bold]", default=True):
-        config_directory = os.path.expanduser("~/.config/plexapi")
-        os.makedirs(config_directory, exist_ok=True)
-        config_file_path = os.path.join(config_directory, "config.ini")
-
-        with open(config_file_path, "w") as configfile:
-            configfile.write("[auth]\n")
-            configfile.write(f"server_baseurl = {plex_url}\n")
-            configfile.write(f"server_token = {plex_token}\n")
-
-        console.print(
-            f"\n[bold green]✓[/bold green] Credentials saved to [dim]{config_file_path}[/dim]"
-        )
+    if ui.confirm_save():
+        try:
+            credentials = PlexCredentials(url=plex_url, token=plex_token)
+            config_manager.save(credentials)
+            ui.show_success(f"Credentials saved to {config_manager.config_path}")
+        except IOError as e:
+            ui.show_error(f"Failed to save: {e}")
+            raise typer.Exit(code=1)
     else:
-        console.print("\n[dim]Credentials not saved[/dim]")
+        ui.show_info("Credentials not saved")
 
 
 @app.command()
@@ -175,7 +118,7 @@ def find_dupes(
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    libraries: Optional[list[str]] = typer.Option(
+    libraries: list[str] | None = typer.Option(
         None,
         "-l",
         "--libraries",
@@ -195,7 +138,7 @@ def main_callback(
         "--force",
         help="Process movie posters without matching to a media folder",
     ),
-    filter_str: Optional[str] = typer.Option(
+    filter_str: str | None = typer.Option(
         None, "--filter", help="String filter for source poster folders"
     ),
     replace_all: bool = typer.Option(
@@ -207,7 +150,7 @@ def main_callback(
     copy: bool = typer.Option(
         False, "-c", "--copy", help="Copy posters to media folders"
     ),
-    download_url: Optional[str] = typer.Option(
+    download_url: str | None = typer.Option(
         None, "-d", "--download", help="Download a poster from a URL"
     ),
 ):
@@ -219,95 +162,71 @@ def main_callback(
     # Import here to avoid circular imports and to delay loading
     import collections
     import os
+
     from rapidfuzz import fuzz, process, utils
-    from plexapi.server import CONFIG
+
     from tpdb.main import (
         POSTER_DIR,
         LibraryData,
+        Options,
         Posters,
-        update_config,
+        check_file,
+        copy_posters,
+        download_poster,
         find_posters,
         movie_poster,
         organize_movie_folder,
         organize_show_folder,
         process_zip_file,
         sync_movie_folder,
-        copy_posters,
-        check_file,
-        download_poster,
     )
 
     # Handle download (if specified, download first but continue processing)
     if download_url:
         download_poster(download_url)
 
-    # Get Plex configuration
-    plex_url = ""
-    plex_token = ""
+    # Get Plex configuration using new architecture
+    config_manager = PlexConfigManager()
+    credentials = config_manager.load()
 
-    if CONFIG:
-        plex_token = CONFIG.data.get("auth", {}).get("server_token", "")
-        plex_url = CONFIG.data.get("auth", {}).get("server_baseurl", "")
+    if not credentials:
+        # Display authentication panel using PlexAuthUI
+        ui = PlexAuthUI(console)
+        ui.show_credentials_needed_panel()
 
-    if not plex_token or not plex_url:
-        # Display authentication panel
+        plex_url = ui.prompt_url()
+        plex_token = ui.prompt_token()
+
+        if ui.confirm_save():
+            try:
+                credentials = PlexCredentials(url=plex_url, token=plex_token)
+                config_manager.save(credentials)
+                ui.show_success(f"Credentials saved to {config_manager.config_path}")
+            except IOError as e:
+                ui.show_error(f"Failed to save: {e}")
+                ui.show_info("Continuing with unsaved credentials...")
         console.print()
-        console.print(
-            Panel.fit(
-                "[bold yellow]Plex credentials not found[/bold yellow]\n\n"
-                "Please provide your Plex server details.\n"
-                "[dim]Tip: Run [bold]tpdb login[/bold] for a better setup experience[/dim]",
-                border_style="yellow",
-            )
-        )
-        console.print()
-
-        if not plex_url:
-            plex_url = Prompt.ask(
-                "[bold]Plex Server URL[/bold]",
-                default="http://localhost:32400",
-            )
-        if not plex_token:
-            plex_token = Prompt.ask(
-                "[bold]Plex Authentication Token[/bold]",
-                password=True,
-            )
-
-        if Confirm.ask("\n[bold]Save credentials?[/bold]", default=True):
-            config_directory = os.path.expanduser("~/.config/plexapi")
-            os.makedirs(config_directory, exist_ok=True)
-            config_file_path = os.path.join(config_directory, "config.ini")
-
-            if not os.path.exists(config_file_path):
-                with open(config_file_path, "w") as configfile:
-                    configfile.write("[auth]\n")
-                    configfile.write(f"server_baseurl = {plex_url}\n")
-                    configfile.write(f"server_token = {plex_token}\n")
-                console.print(
-                    f"[bold green]✓[/bold green] Credentials saved to [dim]{config_file_path}[/dim]"
-                )
-            else:
-                if update_config(config_file_path):
-                    console.print("[bold green]✓[/bold green] Config file updated.")
-                else:
-                    console.print(
-                        "[bold yellow]⚠ Warning:[/bold yellow] Config file already contains data, but server_baseurl and "
-                        "server_token were not found. Please update it manually."
-                    )
-        console.print()
+    else:
+        plex_url = credentials.url
+        plex_token = credentials.token
 
     # Connect to Plex server with validation
-    success, message, plex = test_plex_connection(plex_url, plex_token)
+    auth = PlexAuthenticator(timeout=30)
+    ui = PlexAuthUI(console)
 
-    if not success:
-        console.print(f"\n{message}")
+    with ui.show_connecting_status():
+        result = auth.connect(plex_url, plex_token)
+
+    if not result.success:
+        ui.show_error(f"Connection failed: {result.error_message}")
         console.print(
             "\n[bold red]✗[/bold red] Failed to connect to Plex server. "
             "Run [bold]tpdb login[/bold] to reconfigure."
         )
         raise typer.Exit(code=1)
 
-    console.print(f"[dim]{message}[/dim]\n")
+    ui.show_info(f"Connected to {result.server_info['name']}\n")
+    plex = result.server
 
     all_libraries = []
     for library in plex.library.sections():
@@ -337,7 +256,6 @@ def main_callback(
         import tpdb.main as main_module
 
         # Create opts object using the Options class from main
-        from tpdb.main import Options
 
         opts_obj = Options()
         opts_obj.force = force

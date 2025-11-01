@@ -118,6 +118,46 @@ POSTER_DIR = "/data/Posters"  # Static default
 - `find_best_media_match()`: Fuzzy matching using rapidfuzz
 - Highly testable (see `tests/test_matcher.py`)
 
+#### `src/tpdb/auth/` package
+
+**Well-architected authentication module with separation of concerns:**
+
+- `config.py` - `PlexConfigManager` and `PlexCredentials` dataclass
+  - Handles loading/saving Plex credentials from config files
+  - Proper error handling with IOError for file operations
+  - No side effects - fully testable
+- `plex_auth.py` - `PlexAuthenticator` and `ConnectionResult` dataclass
+  - Pure business logic for Plex server connections
+  - No UI dependencies - perfect for testing
+  - Comprehensive exception handling for all error types
+- `validators.py` - Input validation functions
+  - `validate_and_normalize_url()` - URL validation with scheme normalization
+  - `validate_token()` - Token format validation
+  - Returns tuple of (is_valid, value/error)
+
+**Benefits:**
+
+- 100% test coverage (66 tests)
+- Pure functions with no side effects
+- Easy to mock and test
+- Proper type hints with dataclasses
+
+#### `src/tpdb/ui/` package
+
+**Presentation layer separated from business logic:**
+
+- `prompts.py` - `PlexAuthUI` class
+  - All Rich console UI code isolated here
+  - No business logic - only presentation
+  - Methods for panels, prompts, status, messages
+  - Dependency injection via console parameter
+
+**Benefits:**
+
+- Business logic can be tested without mocking Rich
+- UI can be changed without affecting core logic
+- Clear separation of concerns
+
 #### `src/tpdb/dupes.py`
 
 - Standalone duplicate detection utility
@@ -261,11 +301,29 @@ sync_movie_folder(path)
 
 ### Current Test Coverage
 
-⚠️ **Limited coverage** - only `matcher.py` is fully tested:
+✅ **Excellent coverage for auth and ui modules** - 66 comprehensive tests:
 
-- `normalize_name()` - comprehensive parametrized tests
-- `find_best_media_match()` - multiple scenarios covered
-- Most of `main.py` and `cli.py` are **untested**
+**Fully Tested:**
+
+- `auth/config.py` - PlexConfigManager and PlexCredentials (12 tests)
+- `auth/plex_auth.py` - PlexAuthenticator and ConnectionResult (14 tests)
+- `auth/validators.py` - URL and token validation (13 tests)
+- `ui/prompts.py` - PlexAuthUI class (15 tests)
+- `matcher.py` - normalize_name() and find_best_media_match() (12 tests)
+
+**Benefits of new test architecture:**
+
+- Pure functions are easy to test without mocking
+- Business logic separated from UI enables isolated testing
+- Mock PlexServer for connection tests (no real network calls)
+- Parametrized tests for comprehensive edge case coverage
+- Test file operations with temporary directories
+- Proper exception handling verification
+
+⚠️ **Still needs coverage:**
+
+- Most of `main.py` (poster organization logic)
+- Integration tests for `cli.py` commands
 
 ### Writing Tests
 

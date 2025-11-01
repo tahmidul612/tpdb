@@ -285,7 +285,7 @@ def main_callback(
             if filter_str:
                 folder_and_score = [
                     e
-                    for e in process.extractBests(
+                    for e in process.extract(
                         filter_str,
                         poster_data.poster_folders,
                         scorer=fuzz.token_set_ratio,

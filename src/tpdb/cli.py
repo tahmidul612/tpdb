@@ -121,8 +121,8 @@ def main_callback(
     plex_token = ""
 
     if CONFIG:
-        plex_token = CONFIG.data["auth"].get("server_token", "")
-        plex_url = CONFIG.data["auth"].get("server_baseurl", "")
+        plex_token = CONFIG.data.get("auth", {}).get("server_token", "")
+        plex_url = CONFIG.data.get("auth", {}).get("server_baseurl", "")
 
     if not plex_token or not plex_url:
         if not plex_token:

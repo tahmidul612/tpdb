@@ -220,7 +220,7 @@ def main_callback(
     import collections
     import os
     from rapidfuzz import fuzz, process, utils
-    from plexapi.server import CONFIG, PlexServer
+    from plexapi.server import CONFIG
     from tpdb.main import (
         POSTER_DIR,
         LibraryData,
@@ -250,12 +250,30 @@ def main_callback(
         plex_url = CONFIG.data.get("auth", {}).get("server_baseurl", "")
 
     if not plex_token or not plex_url:
-        if not plex_token:
-            plex_token = typer.prompt("Please enter your Plex auth token")
-        if not plex_url:
-            plex_url = typer.prompt("Please enter your Plex URL")
+        # Display authentication panel
+        console.print()
+        console.print(
+            Panel.fit(
+                "[bold yellow]Plex credentials not found[/bold yellow]\n\n"
+                "Please provide your Plex server details.\n"
+                "[dim]Tip: Run [bold]tpdb login[/bold] for a better setup experience[/dim]",
+                border_style="yellow",
+            )
+        )
+        console.print()
 
-        if typer.confirm("Save config?"):
+        if not plex_url:
+            plex_url = Prompt.ask(
+                "[bold]Plex Server URL[/bold]",
+                default="http://localhost:32400",
+            )
+        if not plex_token:
+            plex_token = Prompt.ask(
+                "[bold]Plex Authentication Token[/bold]",
+                password=True,
+            )
+
+        if Confirm.ask("\n[bold]Save credentials?[/bold]", default=True):
             config_directory = os.path.expanduser("~/.config/plexapi")
             os.makedirs(config_directory, exist_ok=True)
             config_file_path = os.path.join(config_directory, "config.ini")
@@ -265,16 +283,32 @@ def main_callback(
                     configfile.write("[auth]\n")
                     configfile.write(f"server_baseurl = {plex_url}\n")
                     configfile.write(f"server_token = {plex_token}\n")
+                console.print(
+                    f"[bold green]✓[/bold green] Credentials saved to [dim]{config_file_path}[/dim]"
+                )
             else:
                 if update_config(config_file_path):
-                    console.print("[bold green]Config file updated.[/bold green]")
+                    console.print("[bold green]✓[/bold green] Config file updated.")
                 else:
                     console.print(
-                        "[bold yellow]Config file already contains data, but server_baseurl and "
-                        "server_token were not found. Please update it manually.[/bold yellow]"
+                        "[bold yellow]⚠ Warning:[/bold yellow] Config file already contains data, but server_baseurl and "
+                        "server_token were not found. Please update it manually."
                     )
+        console.print()
 
-    plex = PlexServer(plex_url, plex_token)
+    # Connect to Plex server with validation
+    success, message, plex = test_plex_connection(plex_url, plex_token)
+
+    if not success:
+        console.print(f"\n{message}")
+        console.print(
+            "\n[bold red]✗[/bold red] Failed to connect to Plex server. "
+            "Run [bold]tpdb login[/bold] to reconfigure."
+        )
+        raise typer.Exit(code=1)
+
+    console.print(f"[dim]{message}[/dim]\n")
+
     all_libraries = []
     for library in plex.library.sections():
         if library.type not in ["artist", "photo"] and library.locations:

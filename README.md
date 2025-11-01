@@ -1,8 +1,16 @@
 # TPDB - Plex Poster Organizer
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-![Version](https://img.shields.io/badge/version-0.3.1-green.svg)
+<div align="center">
+
+[![License](https://img.shields.io/github/license/tahmidul612/tpdb?style=for-the-badge&logo=opensourceinitiative&logoColor=white&color=blue)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Version](https://img.shields.io/github/v/tag/tahmidul612/tpdb?style=for-the-badge&label=version&color=green)](https://github.com/tahmidul612/tpdb/tags)
+
+<!-- [![GitHub Stars](https://img.shields.io/github/stars/tahmidul612/tpdb?style=for-the-badge&logo=github&color=yellow)](https://github.com/tahmidul612/tpdb/stargazers)
+[![Issues](https://img.shields.io/github/issues/tahmidul612/tpdb?style=for-the-badge&logo=github&color=red)](https://github.com/tahmidul612/tpdb/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/tahmidul612/tpdb?style=for-the-badge&logo=git&logoColor=white&color=orange)](https://github.com/tahmidul612/tpdb/commits) -->
+
+</div>
 
 **TPDB** is a powerful Python utility that streamlines the management of movie and TV show posters for your Plex media server. Download, organize, and sync custom artwork from ThePosterDB with intelligent fuzzy matching and automated folder organization.
 

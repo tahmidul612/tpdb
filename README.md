@@ -213,11 +213,6 @@ tpdb -l Movies --action new
 tpdb -l "TV Shows" --action sync --copy
 ```
 
-<div align="center">
-  <img src="docs/assets/quickstart.gif" alt="Quick start demo" width="800">
-  <p><em>Download, organize, and sync posters in minutes</em></p>
-</div>
-
 ## Usage
 
 ### Main Command
@@ -260,11 +255,6 @@ tpdb -d "https://theposterdb.com/set/12345" -l Movies --action new
 ```
 
 The downloaded files are automatically saved to your poster directory and can be immediately organized.
-
-<div align="center">
-  <img src="docs/assets/download-demo.gif" alt="Download command demo" width="800">
-  <p><em>Downloading poster sets from ThePosterDB</em></p>
-</div>
 
 ### Duplicate Detection
 
@@ -314,11 +304,6 @@ tpdb -l Movies --action new
 # Copy the organized posters to your media folders
 tpdb -l Movies --copy
 ```
-
-<div align="center">
-  <img src="docs/assets/workflow-download.png" alt="Download and organize workflow" width="800">
-  <p><em>Complete workflow from download to organization</em></p>
-</div>
 
 ### Workflow 2: Sync Existing Posters
 
@@ -433,11 +418,6 @@ TPDB organizes your posters into a clean, hierarchical structure optimized for K
 - **Collections**: Each movie in a collection gets its own subfolder
 - **Archives**: ZIP files are moved here after extraction to keep directories clean
 - **Naming**: All poster files are renamed to `poster.jpg` for consistency
-
-<div align="center">
-  <img src="docs/assets/structure-example.png" alt="Directory structure visualization" width="800">
-  <p><em>Clean, organized poster structure ready for Kometa</em></p>
-</div>
 
 ## How It Works
 

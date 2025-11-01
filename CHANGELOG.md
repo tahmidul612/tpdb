@@ -1,3 +1,22 @@
+## v0.4.0 (2025-11-01)
+
+### Feat
+
+- add interactive login command with connection testing (#12)
+
+### Fix
+
+- replace process.extractBests with process.extract for rapidfuzz compatibility (#14)
+- handle missing auth key in Plex config gracefully (#11)
+
+### Refactor
+
+- update CLI to use new auth architecture
+- create UI package with Plex auth prompts
+- add input validators for URL and token
+- add plex authentication logic with proper error handling
+- create auth package with config management
+
 ## v0.3.1 (2025-10-26)
 
 ### Refactor
